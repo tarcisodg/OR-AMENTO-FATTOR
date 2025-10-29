@@ -1,0 +1,5 @@
+{
+  "name": "APP orçamento grafica",
+  "description": "Uma aplicação para calcular quantos objetos de um determinado tamanho cabem em uma área específica, comparando as orientações vertical e horizontal para determinar o melhor encaixe.",
+  "requestFramePermissions": []
+}
