@@ -1,11 +1,11 @@
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import type { Dimensions, CalculationResults, BudgetResult, SavedBudget, CalculationHistoryItem } from './types';
 import InputGroup from './components/InputGroup';
 import ResultsDisplay from './components/ResultsDisplay';
 import SavedBudgetsList from './components/SavedBudgetsList';
 import CalculationHistory from './components/HistoryLog';
+import Toast from './components/Toast';
+import ThemeToggle from './components/ThemeToggle';
 
 const WidthIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -101,13 +101,13 @@ const LogoIcon: React.FC<{ className?: string }> = ({ className }) => (
         className={className}
         aria-label="APP Orçamento Gráfica Logo"
     >
-        <rect width="64" height="64" rx="12" fill="#f1f5f9"/> 
-        <rect x="12" y="12" width="40" height="40" rx="6" fill="#e2e8f0"/> 
-        <rect x="16" y="16" width="10" height="16" rx="2" fill="#0ea5e9"/>
-        <rect x="28" y="16" width="10" height="16" rx="2" fill="#0ea5e9"/>
-        <rect x="40" y="16" width="10" height="16" rx="2" fill="#0ea5e9"/>
-        <rect x="16" y="34" width="10" height="16" rx="2" fill="#0ea5e9"/>
-        <rect x="28" y="34" width="10" height="16" rx="2" fill="#0ea5e9"/>
+        <rect width="64" height="64" rx="12" fill="#f1f5f9" className="dark:fill-slate-800"/> 
+        <rect x="12" y="12" width="40" height="40" rx="6" fill="#e2e8f0" className="dark:fill-slate-700"/> 
+        <rect x="16" y="16" width="10" height="16" rx="2" fill="#0ea5e9" className="dark:fill-sky-600"/>
+        <rect x="28" y="16" width="10" height="16" rx="2" fill="#0ea5e9" className="dark:fill-sky-600"/>
+        <rect x="40" y="16" width="10" height="16" rx="2" fill="#0ea5e9" className="dark:fill-sky-600"/>
+        <rect x="16" y="34" width="10" height="16" rx="2" fill="#0ea5e9" className="dark:fill-sky-600"/>
+        <rect x="28" y="34" width="10" height="16" rx="2" fill="#0ea5e9" className="dark:fill-sky-600"/>
     </svg>
 );
 
@@ -147,6 +147,16 @@ const finishingOptions = [
 
 const App: React.FC = () => {
     // State definitions
+    const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+        if (typeof window !== 'undefined' && localStorage.getItem('theme')) {
+            return localStorage.getItem('theme') as 'light' | 'dark';
+        }
+        if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            return 'dark';
+        }
+        return 'light';
+    });
+
     const [objectDimensions, setObjectDimensions] = useState<Dimensions>({ width: '', height: '' });
     const [selectedPaperSize, setSelectedPaperSize] = useState<string>('SRA3_CORTE');
     const [areaDimensions, setAreaDimensions] = useState<Dimensions>({ 
@@ -170,8 +180,27 @@ const App: React.FC = () => {
     const [budgetResult, setBudgetResult] = useState<BudgetResult | null>(null);
     const [savedBudgets, setSavedBudgets] = useState<SavedBudget[]>([]);
     const [calculationHistory, setCalculationHistory] = useState<CalculationHistoryItem[]>([]);
-    
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
+
     const isInitialMount = useRef(true);
+
+    // Theme effect
+    useEffect(() => {
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        try {
+            localStorage.setItem('theme', theme);
+        } catch (error) {
+            console.error("Failed to save theme to localStorage", error);
+        }
+    }, [theme]);
+    
+    const toggleTheme = () => {
+        setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
+    };
 
      useEffect(() => {
         // Load saved budgets
@@ -405,6 +434,7 @@ const App: React.FC = () => {
         const updatedBudgets = [...savedBudgets, newBudget];
         setSavedBudgets(updatedBudgets);
         localStorage.setItem('budgets', JSON.stringify(updatedBudgets));
+        setToast({ message: 'Orçamento salvo com sucesso!', type: 'success' });
     };
 
     const handleLoadBudget = (budgetId: string) => {
@@ -428,6 +458,7 @@ const App: React.FC = () => {
             setPaymentMethod(budgetToLoad.paymentMethod || paymentOptions[0]);
             setResults(budgetToLoad.results || null);
             setBudgetResult(budgetToLoad.budgetResult || null);
+            setToast({ message: 'Orçamento carregado!', type: 'info' });
         }
     };
 
@@ -458,6 +489,7 @@ const App: React.FC = () => {
             setPaymentMethod(historyToLoad.paymentMethod || paymentOptions[0]);
             setResults(historyToLoad.results || null);
             setBudgetResult(historyToLoad.budgetResult || null);
+            setToast({ message: 'Cálculo do histórico carregado!', type: 'info' });
         }
     };
     
@@ -478,26 +510,36 @@ const App: React.FC = () => {
     const remainingValue = remainingInCents / 100;
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-800 antialiased">
-            <main className="container mx-auto px-4 py-8 md:py-12">
+        <div className="min-h-screen bg-slate-50 text-slate-800 antialiased dark:bg-slate-900 dark:text-slate-200">
+            {toast && (
+                <Toast 
+                    message={toast.message} 
+                    type={toast.type} 
+                    onClose={() => setToast(null)} 
+                />
+            )}
+            <main className="container mx-auto px-4 py-8 md:py-12 relative">
+                <div className="absolute top-4 right-4 z-10">
+                    <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
+                </div>
                 <header className="text-center mb-8 md:mb-12">
                     <LogoIcon className="w-16 h-16 mx-auto mb-4" />
-                    <h1 className="text-4xl md:text-5xl font-bold text-slate-900">Calculadora de Encaixe e Orçamento</h1>
-                    <p className="mt-2 text-lg text-slate-600">Otimize o uso do material e calcule os custos de produção.</p>
+                    <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-slate-50">Calculadora de Encaixe e Orçamento</h1>
+                    <p className="mt-2 text-lg text-slate-600 dark:text-slate-400">Otimize o uso do material e calcule os custos de produção.</p>
                 </header>
 
                 <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                     <div className="md:col-span-2 bg-white p-6 rounded-xl shadow-md">
-                        <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 mb-6">Tamanho ou Formato</h2>
+                     <div className="md:col-span-2 bg-white p-6 rounded-xl shadow-md dark:bg-slate-800">
+                        <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 mb-6 dark:text-slate-300 dark:border-slate-700">Tamanho ou Formato</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-6 items-end">
                             <InputGroup label="Largura do Objeto (cm)" name="width" value={objectDimensions.width} onChange={handleObjectChange} placeholder="ex: 10" icon={<WidthIcon className="w-5 h-5 text-slate-400" />} />
                             <InputGroup label="Altura do Objeto (cm)" name="height" value={objectDimensions.height} onChange={handleObjectChange} placeholder="ex: 5" icon={<HeightIcon className="w-5 h-5 text-slate-400" />} />
                             <InputGroup label="Sangria / Espaço (cm)" name="gap" value={gap} onChange={handleGapChange} placeholder="ex: 0.3" icon={<GapIcon className="w-5 h-5 text-slate-400" />} />
                             <div>
-                                <label htmlFor="paper-size" className="block text-sm font-medium text-slate-700 mb-1">Tamanho do Papel</label>
+                                <label htmlFor="paper-size" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Tamanho do Papel</label>
                                 <div className="relative rounded-md shadow-sm">
                                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><PaperIcon className="w-5 h-5 text-slate-400" /></div>
-                                    <select id="paper-size" name="paper-size" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm" value={selectedPaperSize} onChange={handlePaperSizeChange}>
+                                    <select id="paper-size" name="paper-size" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={selectedPaperSize} onChange={handlePaperSizeChange}>
                                         {Object.entries(paperSizes).map(([key, { name }]) => (<option key={key} value={key}>{name}</option>))}
                                     </select>
                                 </div>
@@ -505,68 +547,68 @@ const App: React.FC = () => {
                         </div>
                     </div>
                     
-                    <div className="bg-white p-6 rounded-xl shadow-md space-y-6">
-                        <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3">Orçamento e Detalhes do Trabalho</h2>
+                    <div className="bg-white p-6 rounded-xl shadow-md space-y-6 dark:bg-slate-800">
+                        <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 dark:text-slate-300 dark:border-slate-700">Orçamento e Detalhes do Trabalho</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <InputGroup label="Custo por Página (R$)" name="cost" value={costPerPage} onChange={handleCostChange} placeholder="ex: 2.50" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} />
                             <InputGroup label="Quantidade Desejada" name="quantity" value={desiredQuantity} onChange={handleQuantityChange} placeholder="ex: 1000" icon={<QuantityIcon className="w-5 h-5 text-slate-400" />} />
                             <InputGroup label="Custo Extra (Acabamento, etc)" name="extra" value={extraCost} onChange={handleExtraCostChange} placeholder="ex: 50.00" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} />
                             <div>
-                                <label htmlFor="colors" className="block text-sm font-medium text-slate-700 mb-1">Cores</label>
+                                <label htmlFor="colors" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Cores</label>
                                 <div className="relative rounded-md shadow-sm">
                                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><ColorsIcon className="w-5 h-5 text-slate-400" /></div>
-                                    <select id="colors" name="colors" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm" value={colors} onChange={handleColorsChange}>
+                                    <select id="colors" name="colors" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={colors} onChange={handleColorsChange}>
                                         {colorOptions.map((option) => (<option key={option} value={option}>{option}</option>))}
                                     </select>
                                 </div>
                             </div>
                             <div className="sm:col-span-2">
-                                <label htmlFor="paper-type" className="block text-sm font-medium text-slate-700 mb-1">Tipo de Papel</label>
+                                <label htmlFor="paper-type" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Tipo de Papel</label>
                                 <div className="relative rounded-md shadow-sm">
                                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><PaperIcon className="w-5 h-5 text-slate-400" /></div>
-                                    <select id="paper-type" name="paper-type" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm" value={paperType} onChange={handlePaperTypeChange}>
+                                    <select id="paper-type" name="paper-type" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={paperType} onChange={handlePaperTypeChange}>
                                         {paperTypes.map((type) => (<option key={type} value={type}>{type}</option>))}
                                     </select>
                                 </div>
                             </div>
                             <div className="sm:col-span-2">
-                                <label htmlFor="finishing" className="block text-sm font-medium text-slate-700 mb-1">Acabamento</label>
+                                <label htmlFor="finishing" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Acabamento</label>
                                 <div className="relative rounded-md shadow-sm">
                                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><FinishingIcon className="w-5 h-5 text-slate-400" /></div>
-                                    <select id="finishing" name="finishing" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm" value={finishing} onChange={handleFinishingChange}>
+                                    <select id="finishing" name="finishing" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={finishing} onChange={handleFinishingChange}>
                                         {finishingOptions.map((option) => (<option key={option} value={option}>{option}</option>))}
                                     </select>
                                 </div>
                             </div>
                             <div className="sm:col-span-2">
-                                <label htmlFor="job-description" className="block text-sm font-medium text-slate-700 mb-1">Descrição do Trabalho</label>
+                                <label htmlFor="job-description" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Descrição do Trabalho</label>
                                 <div className="relative rounded-md shadow-sm">
                                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 pt-2"><DescriptionIcon className="w-5 h-5 text-slate-400" /></div>
-                                    <textarea id="job-description" name="job-description" rows={3} className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm" placeholder="Ex: Cartões de visita, adesivos..." value={jobDescription} onChange={handleJobDescriptionChange} />
+                                    <textarea id="job-description" name="job-description" rows={3} className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400" placeholder="Ex: Cartões de visita, adesivos..." value={jobDescription} onChange={handleJobDescriptionChange} />
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <div className="bg-white p-6 rounded-xl shadow-md space-y-6">
-                        <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3">Dados do Cliente</h2>
+                    <div className="bg-white p-6 rounded-xl shadow-md space-y-6 dark:bg-slate-800">
+                        <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 dark:text-slate-300 dark:border-slate-700">Dados do Cliente</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div className="sm:col-span-2"><InputGroup label="Cliente" name="clientName" value={clientName} onChange={handleClientNameChange} placeholder="Nome do Cliente" icon={<UserIcon className="w-5 h-5 text-slate-400" />} type="text" /></div>
                             <InputGroup label="Telefone" name="clientPhone" value={clientPhone} onChange={handleClientPhoneChange} placeholder="(00) 0000-0000" icon={<PhoneIcon className="w-5 h-5 text-slate-400" />} type="tel" />
                             <InputGroup label="Pasta" name="clientFolder" value={clientFolder} onChange={handleClientFolderChange} placeholder="Nome da pasta" icon={<FolderIcon className="w-5 h-5 text-slate-400" />} type="text" />
                             <InputGroup label="Valor de Entrada (R$)" name="downPayment" value={downPayment} onChange={handleDownPaymentChange} placeholder="ex: 100.00" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} />
                             <div>
-                                <label htmlFor="remainingValue" className="block text-sm font-medium text-slate-700 mb-1">Valor Restante</label>
+                                <label htmlFor="remainingValue" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Valor Restante</label>
                                 <div className="relative rounded-md shadow-sm">
                                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><MoneyIcon className="w-5 h-5 text-slate-400" /></div>
-                                    <input type="text" name="remainingValue" id="remainingValue" value={remainingValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} className="block w-full rounded-md border-slate-300 pl-10 py-2 bg-slate-100 text-slate-500 cursor-not-allowed sm:text-sm" disabled />
+                                    <input type="text" name="remainingValue" id="remainingValue" value={remainingValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} className="block w-full rounded-md border-slate-300 pl-10 py-2 bg-slate-100 text-slate-500 cursor-not-allowed sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-400" disabled />
                                 </div>
                             </div>
                             <div className="sm:col-span-2">
-                                <label htmlFor="payment-method" className="block text-sm font-medium text-slate-700 mb-1">Pagamento</label>
+                                <label htmlFor="payment-method" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Pagamento</label>
                                 <div className="relative rounded-md shadow-sm">
                                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><CreditCardIcon className="w-5 h-5 text-slate-400" /></div>
-                                    <select id="payment-method" name="payment-method" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm" value={paymentMethod} onChange={handlePaymentMethodChange}>
+                                    <select id="payment-method" name="payment-method" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={paymentMethod} onChange={handlePaymentMethodChange}>
                                         {paymentOptions.map((option) => (<option key={option} value={option}>{option}</option>))}
                                     </select>
                                 </div>
@@ -576,10 +618,10 @@ const App: React.FC = () => {
                 </div>
 
                 <div className="mt-8 flex justify-center gap-4 flex-wrap">
-                    <button onClick={handleCalculate} className="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-all duration-300 text-lg">
+                    <button onClick={handleCalculate} className="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-all duration-300 text-lg active:scale-[0.98] active:brightness-95">
                         Calcular
                     </button>
-                    <button onClick={handleSaveBudget} className="bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 text-lg flex items-center gap-2" title="Salvar os dados atuais como um novo orçamento">
+                    <button onClick={handleSaveBudget} className="bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Salvar os dados atuais como um novo orçamento">
                         <SaveIcon className="w-5 h-5" />
                         Salvar Orçamento
                     </button>

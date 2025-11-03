@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import type { CalculationResults, BudgetResult } from '../types';
 import VisualizationGrid from './VisualizationGrid';
@@ -218,24 +217,15 @@ ${downPaymentValue > 0 ? `Entrada: ${downPaymentValue.toLocaleString('pt-BR', { 
     const handlePrint = () => {
         if (!orderModalContentRef.current) return;
 
-        const contentToPrint = orderModalContentRef.current.outerHTML;
-        
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'absolute';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = '0';
-        
-        document.body.appendChild(iframe);
-        
-        const doc = iframe.contentWindow?.document;
-        if (!doc) {
-            document.body.removeChild(iframe);
+        const printWindow = window.open('', '_blank', 'height=800,width=800');
+        if (!printWindow) {
+            alert('Por favor, permita pop-ups para este site para poder imprimir.');
             return;
         }
 
-        doc.open();
-        doc.write(`
+        const contentToPrint = orderModalContentRef.current.outerHTML;
+        
+        printWindow.document.write(`
             <html>
                 <head>
                     <title>Ordem de Serviço</title>
@@ -258,45 +248,28 @@ ${downPaymentValue > 0 ? `Entrada: ${downPaymentValue.toLocaleString('pt-BR', { 
                 </body>
             </html>
         `);
-        doc.close();
 
-        const tailwindScript = doc.querySelector('script[src="https://cdn.tailwindcss.com"]');
-        if (tailwindScript) {
-             (tailwindScript as HTMLScriptElement).onload = () => {
-                iframe.contentWindow?.focus();
-                iframe.contentWindow?.print();
-                document.body.removeChild(iframe);
-             };
-        } else {
-            setTimeout(() => {
-                iframe.contentWindow?.focus();
-                iframe.contentWindow?.print();
-                document.body.removeChild(iframe);
-            }, 1000);
-        }
+        printWindow.document.close();
+
+        setTimeout(() => {
+            printWindow.focus();
+            printWindow.print();
+            printWindow.close();
+        }, 1000);
     };
     
     const handlePrintProductionOrder = () => {
         if (!productionOrderRef.current) return;
 
-        const contentToPrint = productionOrderRef.current.innerHTML;
-        
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'absolute';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = '0';
-        
-        document.body.appendChild(iframe);
-        
-        const doc = iframe.contentWindow?.document;
-        if (!doc) {
-            document.body.removeChild(iframe);
+        const printWindow = window.open('', '_blank', 'height=800,width=800');
+        if (!printWindow) {
+            alert('Por favor, permita pop-ups para este site para poder imprimir.');
             return;
         }
 
-        doc.open();
-        doc.write(`
+        const contentToPrint = productionOrderRef.current.innerHTML;
+        
+        printWindow.document.write(`
             <html>
                 <head>
                     <title>Ordem de Produção</title>
@@ -319,83 +292,74 @@ ${downPaymentValue > 0 ? `Entrada: ${downPaymentValue.toLocaleString('pt-BR', { 
                 </body>
             </html>
         `);
-        doc.close();
 
-        const tailwindScript = doc.querySelector('script[src="https://cdn.tailwindcss.com"]');
-        if (tailwindScript) {
-             (tailwindScript as HTMLScriptElement).onload = () => {
-                iframe.contentWindow?.focus();
-                iframe.contentWindow?.print();
-                document.body.removeChild(iframe);
-             };
-        } else {
-            // Fallback timeout
-            setTimeout(() => {
-                iframe.contentWindow?.focus();
-                iframe.contentWindow?.print();
-                document.body.removeChild(iframe);
-            }, 1000);
-        }
+        printWindow.document.close();
+
+        setTimeout(() => {
+            printWindow.focus();
+            printWindow.print();
+            printWindow.close();
+        }, 1000);
     };
 
 
     return (
         <>
         <div className="mt-12">
-            <h2 className="text-3xl font-bold text-center text-slate-800 mb-8">Resultados</h2>
+            <h2 className="text-3xl font-bold text-center text-slate-800 mb-8 dark:text-slate-200">Resultados</h2>
 
             {budgetResult && (
               <>
-                <div className="max-w-3xl mx-auto bg-sky-50 p-6 rounded-xl shadow-md mb-8 border border-sky-200">
-                    <h3 className="text-xl font-semibold text-sky-800 mb-4 text-center">Detalhes da Produção</h3>
+                <div className="max-w-3xl mx-auto bg-sky-50 p-6 rounded-xl shadow-md mb-8 border border-sky-200 dark:bg-sky-900/20 dark:border-sky-800">
+                    <h3 className="text-xl font-semibold text-sky-800 mb-4 text-center dark:text-sky-300">Detalhes da Produção</h3>
                      <div className="space-y-3 text-lg">
                         <div className="flex justify-between items-center">
-                            <span className="text-slate-600">Páginas necessárias:</span>
-                            <span className="font-bold text-slate-800">{budgetResult.totalPages}</span>
+                            <span className="text-slate-600 dark:text-slate-400">Páginas necessárias:</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-200">{budgetResult.totalPages}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                            <span className="text-slate-600">Itens por página (melhor encaixe):</span>
-                            <span className="font-bold text-slate-800">{budgetResult.itemsPerPage}</span>
+                            <span className="text-slate-600 dark:text-slate-400">Itens por página (melhor encaixe):</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-200">{budgetResult.itemsPerPage}</span>
                         </div>
                     </div>
                 </div>
 
-                <div className="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-lg border-2 border-sky-500 mb-8">
-                    <h3 className="text-2xl font-semibold text-sky-700 mb-4 text-center">Resumo do Orçamento</h3>
+                <div className="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-lg border-2 border-sky-500 mb-8 dark:bg-slate-800/50 dark:border-sky-700">
+                    <h3 className="text-2xl font-semibold text-sky-700 mb-4 text-center dark:text-sky-400">Resumo do Orçamento</h3>
                     
-                    <div className="mb-4 border-b border-slate-200 pb-4 space-y-3">
+                    <div className="mb-4 border-b border-slate-200 pb-4 space-y-3 dark:border-slate-700">
                         {jobDescription && (
                             <div>
-                                <p className="text-sm font-medium text-slate-500">Descrição do Trabalho</p>
-                                <p className="text-slate-700 whitespace-pre-wrap">{jobDescription}</p>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Descrição do Trabalho</p>
+                                <p className="text-slate-700 whitespace-pre-wrap dark:text-slate-300">{jobDescription}</p>
                             </div>
                         )}
                          {paperType && (
                             <div>
-                                <p className="text-sm font-medium text-slate-500">Tipo de Papel</p>
-                                <p className="text-slate-700 font-semibold">{paperType}</p>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Tipo de Papel</p>
+                                <p className="text-slate-700 font-semibold dark:text-slate-300">{paperType}</p>
                             </div>
                         )}
                     </div>
                     
                     <div className="space-y-4">
                         <div className="flex items-center justify-between text-lg">
-                            <div className="flex items-center text-slate-600">
+                            <div className="flex items-center text-slate-600 dark:text-slate-400">
                                 <MoneyIcon className="w-5 h-5 mr-2 text-slate-400" />
                                 <span>Subtotal (impressão):</span>
                             </div>
-                            <span className="font-semibold text-slate-800">{budgetResult.subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">{budgetResult.subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                         </div>
                         <div className="flex items-center justify-between text-lg">
-                             <div className="flex items-center text-slate-600">
+                             <div className="flex items-center text-slate-600 dark:text-slate-400">
                                 <FinishingIcon className="w-5 h-5 mr-2 text-slate-400" />
                                 <span>Custo extra (acabamento):</span>
                             </div>
-                            <span className="font-semibold text-slate-800">{budgetResult.extraCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">{budgetResult.extraCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                         </div>
-                         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4 flex justify-between items-center">
-                            <span className="text-xl font-bold text-green-800">Custo Total:</span>
-                            <span className="text-3xl font-extrabold text-green-700">
+                         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4 flex justify-between items-center dark:bg-green-900/20 dark:border-green-800">
+                            <span className="text-xl font-bold text-green-800 dark:text-green-300">Custo Total:</span>
+                            <span className="text-3xl font-extrabold text-green-700 dark:text-green-400">
                                 {budgetResult.totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                             </span>
                         </div>
@@ -403,14 +367,14 @@ ${downPaymentValue > 0 ? `Entrada: ${downPaymentValue.toLocaleString('pt-BR', { 
                     <div className="mt-8 flex justify-center flex-wrap gap-4">
                         <button
                             onClick={() => setIsModalOpen(true)}
-                            className="bg-slate-100 text-slate-800 font-semibold py-2 px-5 rounded-lg shadow hover:bg-slate-200 transition-all duration-300 flex items-center justify-center w-full sm:w-auto"
+                            className="bg-slate-100 text-slate-800 font-semibold py-2 px-5 rounded-lg shadow hover:bg-slate-200 transition-all duration-300 flex items-center justify-center w-full sm:w-auto dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
                         >
                             <CopyIcon className="w-5 h-5 mr-2" />
                             Copiar Orçamento
                         </button>
                          <button
                             onClick={handlePrintProductionOrder}
-                            className="bg-slate-700 text-white font-semibold py-2 px-5 rounded-lg shadow hover:bg-slate-800 transition-all duration-300 flex items-center justify-center w-full sm:w-auto"
+                            className="bg-slate-700 text-white font-semibold py-2 px-5 rounded-lg shadow hover:bg-slate-800 transition-all duration-300 flex items-center justify-center w-full sm:w-auto dark:bg-slate-600 dark:hover:bg-slate-500"
                         >
                             <PrintIcon className="w-5 h-5 mr-2" />
                             Imprimir Produção
@@ -429,15 +393,15 @@ ${downPaymentValue > 0 ? `Entrada: ${downPaymentValue.toLocaleString('pt-BR', { 
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Vertical Result Card */}
-                <div className={`relative bg-white p-6 rounded-xl shadow-lg border-2 ${isVerticalBest || isTie ? 'border-green-500' : 'border-transparent'}`}>
+                <div className={`relative bg-white p-6 rounded-xl shadow-lg border-2 ${isVerticalBest || isTie ? 'border-green-500' : 'border-transparent'} dark:bg-slate-800/50`}>
                     {isVerticalBest && <BestFitBadge />}
                     {isTie && <TieBadge />}
-                    <h3 className="text-2xl font-semibold text-sky-700 mb-4">Orientação Vertical</h3>
+                    <h3 className="text-2xl font-semibold text-sky-700 mb-4 dark:text-sky-400">Orientação Vertical</h3>
                     <div className="text-center mb-6">
-                        <p className="text-6xl font-bold text-slate-800">{vertical.total}</p>
-                        <p className="text-slate-500">objetos</p>
+                        <p className="text-6xl font-bold text-slate-800 dark:text-slate-100">{vertical.total}</p>
+                        <p className="text-slate-500 dark:text-slate-400">objetos</p>
                     </div>
-                    <p className="text-sm text-slate-600 text-center mb-4">({vertical.itemsPerWidth} na largura x {vertical.itemsPerHeight} na altura)</p>
+                    <p className="text-sm text-slate-600 text-center mb-4 dark:text-slate-400">({vertical.itemsPerWidth} na largura x {vertical.itemsPerHeight} na altura)</p>
                     <VisualizationGrid 
                         area={areaDimensions}
                         object={objectDimensions}
@@ -448,15 +412,15 @@ ${downPaymentValue > 0 ? `Entrada: ${downPaymentValue.toLocaleString('pt-BR', { 
                 </div>
 
                 {/* Horizontal Result Card */}
-                <div className={`relative bg-white p-6 rounded-xl shadow-lg border-2 ${isHorizontalBest || isTie ? 'border-green-500' : 'border-transparent'}`}>
+                <div className={`relative bg-white p-6 rounded-xl shadow-lg border-2 ${isHorizontalBest || isTie ? 'border-green-500' : 'border-transparent'} dark:bg-slate-800/50`}>
                     {isHorizontalBest && <BestFitBadge />}
                     {isTie && <TieBadge />}
-                    <h3 className="text-2xl font-semibold text-sky-700 mb-4">Orientação Horizontal</h3>
+                    <h3 className="text-2xl font-semibold text-sky-700 mb-4 dark:text-sky-400">Orientação Horizontal</h3>
                      <div className="text-center mb-6">
-                        <p className="text-6xl font-bold text-slate-800">{horizontal.total}</p>
-                        <p className="text-slate-500">objetos</p>
+                        <p className="text-6xl font-bold text-slate-800 dark:text-slate-100">{horizontal.total}</p>
+                        <p className="text-slate-500 dark:text-slate-400">objetos</p>
                     </div>
-                    <p className="text-sm text-slate-600 text-center mb-4">({horizontal.itemsPerWidth} na largura x {horizontal.itemsPerHeight} na altura)</p>
+                    <p className="text-sm text-slate-600 text-center mb-4 dark:text-slate-400">({horizontal.itemsPerWidth} na largura x {horizontal.itemsPerHeight} na altura)</p>
                     <VisualizationGrid 
                         area={areaDimensions}
                         object={{width: objectDimensions.height, height: objectDimensions.width}} // Rotated
@@ -473,20 +437,20 @@ ${downPaymentValue > 0 ? `Entrada: ${downPaymentValue.toLocaleString('pt-BR', { 
                     onClick={() => setIsModalOpen(false)}
                 >
                     <div 
-                        className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg relative transform transition-all duration-300 scale-95"
+                        className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg relative transform transition-all duration-300 scale-95 dark:bg-slate-900"
                         onClick={(e) => e.stopPropagation()} // Prevent closing modal when clicking inside
                         style={{transform: 'scale(1)'}}
                     >
                         <button
                             onClick={() => setIsModalOpen(false)}
-                            className="absolute top-3 right-3 text-slate-400 hover:text-slate-800 p-1 rounded-full"
+                            className="absolute top-3 right-3 text-slate-400 hover:text-slate-800 p-1 rounded-full dark:hover:text-slate-200"
                             aria-label="Fechar modal"
                         >
                            <CloseIcon className="w-6 h-6" />
                         </button>
-                        <h3 className="text-xl font-semibold text-slate-800 mb-4">Orçamento para Cliente</h3>
-                        <div className="bg-slate-50 p-4 rounded-md border border-slate-200 mb-6 max-h-60 overflow-y-auto">
-                            <pre className="text-sm text-slate-700 whitespace-pre-wrap font-sans">{budgetText}</pre>
+                        <h3 className="text-xl font-semibold text-slate-800 mb-4 dark:text-slate-200">Orçamento para Cliente</h3>
+                        <div className="bg-slate-50 p-4 rounded-md border border-slate-200 mb-6 max-h-60 overflow-y-auto dark:bg-slate-800 dark:border-slate-700">
+                            <pre className="text-sm text-slate-700 whitespace-pre-wrap font-sans dark:text-slate-300">{budgetText}</pre>
                         </div>
                         <button
                             onClick={handleCopyAndClose}
@@ -505,15 +469,15 @@ ${downPaymentValue > 0 ? `Entrada: ${downPaymentValue.toLocaleString('pt-BR', { 
                     onClick={() => setIsOrderModalOpen(false)}
                 >
                     <div 
-                        className="bg-slate-100 rounded-xl shadow-2xl p-4 sm:p-6 w-full max-w-4xl relative transform transition-all duration-300 scale-95 flex flex-col max-h-[90vh]"
+                        className="bg-slate-100 rounded-xl shadow-2xl p-4 sm:p-6 w-full max-w-4xl relative transform transition-all duration-300 scale-95 flex flex-col max-h-[90vh] dark:bg-slate-900"
                         onClick={(e) => e.stopPropagation()}
                         style={{transform: 'scale(1)'}}
                     >
                         <div className="flex-shrink-0 flex justify-between items-center mb-4">
-                             <h3 className="text-xl font-bold text-slate-800">Visualização da Ordem de Serviço</h3>
+                             <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">Visualização da Ordem de Serviço</h3>
                              <button
                                 onClick={() => setIsOrderModalOpen(false)}
-                                className="text-slate-400 hover:text-slate-800 p-1 rounded-full z-10"
+                                className="text-slate-400 hover:text-slate-800 p-1 rounded-full z-10 dark:hover:text-slate-200"
                                 aria-label="Fechar modal"
                             >
                                <CloseIcon className="w-6 h-6" />
@@ -620,14 +584,14 @@ ${downPaymentValue > 0 ? `Entrada: ${downPaymentValue.toLocaleString('pt-BR', { 
                             </button>
                              <button
                                 onClick={handlePrint}
-                                className="bg-slate-700 text-white font-semibold py-2 px-5 rounded-lg shadow hover:bg-slate-800 transition-all duration-300 flex items-center justify-center"
+                                className="bg-slate-700 text-white font-semibold py-2 px-5 rounded-lg shadow hover:bg-slate-800 transition-all duration-300 flex items-center justify-center dark:bg-slate-600 dark:hover:bg-slate-500"
                             >
                                 <PrintIcon className="w-5 h-5 mr-2" />
                                 Imprimir
                             </button>
                              <button
                                 onClick={() => setIsOrderModalOpen(false)}
-                                className="bg-slate-200 text-slate-800 font-semibold py-2 px-5 rounded-lg shadow-sm hover:bg-slate-300 transition-all duration-300"
+                                className="bg-slate-200 text-slate-800 font-semibold py-2 px-5 rounded-lg shadow-sm hover:bg-slate-300 transition-all duration-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
                             >
                                 Fechar
                             </button>

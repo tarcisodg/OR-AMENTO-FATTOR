@@ -1,4 +1,3 @@
-
 import React from 'react';
 import type { FitResult } from '../types';
 
@@ -13,6 +12,23 @@ interface VisualizationGridProps {
 const VisualizationGrid: React.FC<VisualizationGridProps> = ({ area, object, fitResult, gap, isBestFit }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = React.useState({ width: 0, height: 0 });
+  const [isDarkMode, setIsDarkMode] = React.useState(
+    // Set initial value without waiting for useEffect to avoid a flicker
+    () => typeof window !== 'undefined' && document.documentElement.classList.contains('dark')
+  );
+
+  React.useEffect(() => {
+    // Observer for dark mode changes on the root element
+    const observer = new MutationObserver(() => {
+        setIsDarkMode(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    
+    // Sync on mount in case it changed between initial render and effect run
+    setIsDarkMode(document.documentElement.classList.contains('dark'));
+    
+    return () => observer.disconnect();
+  }, []);
 
   React.useEffect(() => {
     const updateSize = () => {
@@ -49,14 +65,25 @@ const VisualizationGrid: React.FC<VisualizationGridProps> = ({ area, object, fit
   const areaTooltip = `Área de sobra: ${remainingWidth.toFixed(2)}cm (largura) x ${remainingHeight.toFixed(2)}cm (altura)`;
   const objectTooltip = `Objeto: ${object.width.toFixed(2)}cm x ${object.height.toFixed(2)}cm`;
 
+  // Style for the gap visualization using a subtle pattern
+  const gapColor = isDarkMode ? '#475569' : '#d1d5db'; // slate-600 for dark, slate-300 for light
+  const gapVisualizationStyle = {
+    ...renderedAreaStyle,
+    gap: `${scaledGap}px`,
+    backgroundImage: `
+        linear-gradient(45deg, ${gapColor} 25%, transparent 25%), 
+        linear-gradient(-45deg, ${gapColor} 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, ${gapColor} 75%),
+        linear-gradient(-45deg, transparent 75%, ${gapColor} 75%)`,
+    backgroundSize: '8px 8px',
+    backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px'
+  };
+
   return (
-    <div ref={containerRef} className="w-full h-[250px] flex items-center justify-center bg-slate-100 rounded-lg p-2">
+    <div ref={containerRef} className="w-full h-[250px] flex items-center justify-center bg-slate-100 rounded-lg p-2 dark:bg-slate-800">
       <div 
-        style={{
-          ...renderedAreaStyle,
-          gap: `${scaledGap}px`,
-        }}
-        className="bg-slate-300 flex flex-wrap content-start overflow-hidden"
+        style={gapVisualizationStyle}
+        className="bg-slate-200 flex flex-wrap content-start overflow-hidden dark:bg-slate-700"
         title={areaTooltip}
       >
         {fitResult.total > 0 && Array.from({ length: fitResult.total }).map((_, i) => (
