@@ -490,9 +490,9 @@ ${downPaymentValue > 0 ? `Entrada: ${downPaymentValue.toLocaleString('pt-BR', { 
                                     <div className="flex items-center gap-5">
                                         <LogoPlaceholder className="w-20 h-20" />
                                         <div>
-                                            <h1 className="text-3xl font-bold text-slate-900">Sua Gráfica</h1>
-                                            <p className="text-slate-500 mt-1">Rua da Impressão, 123 - Bairro Centro</p>
-                                            <p className="text-slate-500">(11) 99999-8888 | email@suagrafica.com</p>
+                                            <h1 className="text-3xl font-bold text-slate-900">FATTORPRINT GRÁFICA DIGITAL</h1>
+                                            <p className="text-slate-500 mt-1">Av. Inglaterra, 603 B - Centro - Cambé/PR</p>
+                                            <p className="text-slate-500">(43) 3253-9039 / 99601-1313</p>
                                         </div>
                                     </div>
                                     <div className="text-right">

@@ -91,6 +91,24 @@ const SaveIcon: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
+const UpdateIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h5M4 9a8 8 0 0114.24-2.76M20 20v-5h-5m0 5a8 8 0 01-14.24-2.76" />
+    </svg>
+);
+
+const SaveAsNewIcon: React.FC<{className?: string}> = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+  </svg>
+);
+
+const CancelIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+);
+
 const LogoIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg 
         width="64" 
@@ -181,6 +199,8 @@ const App: React.FC = () => {
     const [savedBudgets, setSavedBudgets] = useState<SavedBudget[]>([]);
     const [calculationHistory, setCalculationHistory] = useState<CalculationHistoryItem[]>([]);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
+    const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
+
 
     const isInitialMount = useRef(true);
 
@@ -420,6 +440,46 @@ const App: React.FC = () => {
     };
     
     const handleSaveBudget = () => {
+        if (editingBudgetId) {
+            // Update existing budget
+            const updatedBudgets = savedBudgets.map(budget => {
+                if (budget.id === editingBudgetId) {
+                    return {
+                        id: budget.id,
+                        createdAt: budget.createdAt,
+                        name: clientName || jobDescription || `Orçamento ${budget.createdAt}`,
+                        objectDimensions, selectedPaperSize, areaDimensions, costPerPage, desiredQuantity,
+                        extraCost, gap, jobDescription, paperType, colors, finishing, clientName,
+                        clientPhone, clientFolder, downPayment, paymentMethod, results, budgetResult,
+                    };
+                }
+                return budget;
+            });
+            setSavedBudgets(updatedBudgets);
+            localStorage.setItem('budgets', JSON.stringify(updatedBudgets));
+            setToast({ message: 'Orçamento atualizado com sucesso!', type: 'success' });
+            setEditingBudgetId(null);
+        } else {
+            // Create new budget
+            const date = new Date();
+            const formattedDate = `${date.toLocaleDateString('pt-BR')} ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+            const name = clientName || jobDescription || `Orçamento ${formattedDate}`;
+            
+            const newBudget: SavedBudget = {
+                id: `budget-${Date.now()}`, name, createdAt: formattedDate, objectDimensions,
+                selectedPaperSize, areaDimensions, costPerPage, desiredQuantity,
+                extraCost, gap, jobDescription, paperType, colors, finishing, clientName,
+                clientPhone, clientFolder, downPayment, paymentMethod, results, budgetResult,
+            };
+
+            const updatedBudgets = [...savedBudgets, newBudget];
+            setSavedBudgets(updatedBudgets);
+            localStorage.setItem('budgets', JSON.stringify(updatedBudgets));
+            setToast({ message: 'Orçamento salvo com sucesso!', type: 'success' });
+        }
+    };
+
+    const handleSaveAsNew = () => {
         const date = new Date();
         const formattedDate = `${date.toLocaleDateString('pt-BR')} ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
         const name = clientName || jobDescription || `Orçamento ${formattedDate}`;
@@ -434,7 +494,38 @@ const App: React.FC = () => {
         const updatedBudgets = [...savedBudgets, newBudget];
         setSavedBudgets(updatedBudgets);
         localStorage.setItem('budgets', JSON.stringify(updatedBudgets));
-        setToast({ message: 'Orçamento salvo com sucesso!', type: 'success' });
+        setToast({ message: 'Orçamento salvo como uma nova cópia!', type: 'success' });
+        setEditingBudgetId(null);
+    };
+
+    const resetForm = () => {
+        setObjectDimensions({ width: '', height: '' });
+        setSelectedPaperSize('SRA3_CORTE');
+        setAreaDimensions({ 
+            width: paperSizes['SRA3_CORTE'].width, 
+            height: paperSizes['SRA3_CORTE'].height 
+        });
+        setGap('');
+        setCostPerPage('');
+        setDesiredQuantity('');
+        setExtraCost('');
+        setJobDescription('');
+        setPaperType(paperTypes[0]);
+        setColors(colorOptions[0]);
+        setFinishing(finishingOptions[0]);
+        setClientName('');
+        setClientPhone('');
+        setClientFolder('');
+        setDownPayment('');
+        setPaymentMethod(paymentOptions[0]);
+        setResults(null);
+        setBudgetResult(null);
+    };
+
+    const handleCancelEdit = () => {
+        resetForm();
+        setEditingBudgetId(null);
+        setToast({ message: 'Edição cancelada.', type: 'info' });
     };
 
     const handleLoadBudget = (budgetId: string) => {
@@ -458,7 +549,8 @@ const App: React.FC = () => {
             setPaymentMethod(budgetToLoad.paymentMethod || paymentOptions[0]);
             setResults(budgetToLoad.results || null);
             setBudgetResult(budgetToLoad.budgetResult || null);
-            setToast({ message: 'Orçamento carregado!', type: 'info' });
+            setEditingBudgetId(budgetId);
+            setToast({ message: 'Orçamento carregado para edição!', type: 'info' });
         }
     };
 
@@ -621,10 +713,27 @@ const App: React.FC = () => {
                     <button onClick={handleCalculate} className="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-all duration-300 text-lg active:scale-[0.98] active:brightness-95">
                         Calcular
                     </button>
-                    <button onClick={handleSaveBudget} className="bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Salvar os dados atuais como um novo orçamento">
-                        <SaveIcon className="w-5 h-5" />
-                        Salvar Orçamento
-                    </button>
+                    {editingBudgetId ? (
+                        <>
+                            <button onClick={handleSaveBudget} className="bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Atualizar o orçamento existente">
+                                <UpdateIcon className="w-5 h-5" />
+                                Atualizar Orçamento
+                            </button>
+                             <button onClick={handleSaveAsNew} className="bg-sky-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Salvar as alterações como um novo orçamento">
+                                <SaveAsNewIcon className="w-5 h-5" />
+                                Salvar como Novo
+                            </button>
+                            <button onClick={handleCancelEdit} className="bg-slate-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Cancelar a edição e limpar o formulário">
+                                <CancelIcon className="w-5 h-5" />
+                                Cancelar
+                            </button>
+                        </>
+                    ) : (
+                        <button onClick={handleSaveBudget} className="bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Salvar os dados atuais como um novo orçamento">
+                            <SaveIcon className="w-5 h-5" />
+                            Salvar Orçamento
+                        </button>
+                    )}
                 </div>
 
                 {results && (

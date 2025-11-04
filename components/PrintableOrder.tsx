@@ -41,8 +41,8 @@ const PrintableOrder: React.FC<PrintableOrderProps> = ({
         <div className="p-2 font-sans text-black bg-white">
             <header className="flex justify-between items-center border-b-2 border-black pb-4 mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold">ORDEM DE SERVIÇO</h1>
-                    <p className="text-sm">GRÁFICA EXEMPLO</p>
+                    <h1 className="text-3xl font-bold">ORDEM DE PRODUÇÃO</h1>
+                    <p className="text-sm">FATTORPRINT GRÁFICA DIGITAL</p>
                 </div>
                 <p className="text-sm">Data de Emissão: {new Date().toLocaleDateString('pt-BR')}</p>
             </header>
