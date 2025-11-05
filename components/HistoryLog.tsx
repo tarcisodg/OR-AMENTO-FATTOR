@@ -22,49 +22,50 @@ interface CalculationHistoryProps {
 
 const CalculationHistory: React.FC<CalculationHistoryProps> = ({ history, onLoad, onClear }) => {
   return (
-    <div className="max-w-4xl mx-auto mt-12">
-        <div className="bg-white p-6 rounded-xl shadow-md dark:bg-slate-800">
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b pb-3 mb-6 gap-4 dark:border-slate-700">
-                <h2 className="text-2xl font-semibold text-slate-700 dark:text-slate-300">Histórico de Cálculos</h2>
-                <button 
-                    onClick={onClear} 
-                    className="flex items-center justify-center gap-2 text-sm font-semibold py-2 px-4 rounded-lg transition-colors duration-200 bg-red-50 text-red-600 hover:bg-red-100 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-800/50"
-                    title="Limpar histórico"
-                    aria-label="Limpar histórico de cálculos"
-                >
-                    <DeleteIcon className="w-5 h-5" />
-                    Limpar Histórico
-                </button>
-            </div>
-            {history.length > 0 ? (
-                <ul className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                    {history.map((item) => (
-                        <li key={item.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200 hover:shadow-sm transition-shadow dark:bg-slate-700/50 dark:border-slate-700">
-                            <div>
-                                <p className="font-semibold text-slate-800 dark:text-slate-200">
-                                    {item.jobDescription || `Cálculo de ${item.objectDimensions.width}x${item.objectDimensions.height}cm`}
-                                </p>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
-                                    Calculado em: {item.timestamp} - Total: <span className="font-medium">{item.budgetResult?.totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) ?? 'N/A'}</span>
-                                </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button 
-                                    onClick={() => onLoad(item.id)} 
-                                    className="p-2 text-sky-600 hover:bg-sky-100 rounded-full transition-colors dark:text-sky-400 dark:hover:bg-sky-900/50"
-                                    title="Carregar Cálculo"
-                                    aria-label={`Carregar cálculo de ${item.timestamp}`}
-                                >
-                                    <LoadIcon className="w-5 h-5" />
-                                </button>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-            ) : (
-                <p className="text-slate-500 text-center py-4 dark:text-slate-400">Nenhum cálculo no histórico.</p>
-            )}
+    <div className="bg-white p-6 rounded-xl shadow-md dark:bg-slate-800 flex flex-col h-full">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b pb-3 mb-6 gap-4 dark:border-slate-700 flex-shrink-0">
+            <h2 className="text-2xl font-semibold text-slate-700 dark:text-slate-300">Histórico de Cálculos</h2>
+            <button 
+                onClick={onClear} 
+                className="flex items-center justify-center gap-2 text-sm font-semibold py-2 px-4 rounded-lg transition-colors duration-200 bg-red-50 text-red-600 hover:bg-red-100 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-800/50 dark:disabled:bg-slate-700/50 dark:disabled:text-slate-500"
+                title="Limpar histórico"
+                aria-label="Limpar histórico de cálculos"
+                disabled={history.length === 0}
+            >
+                <DeleteIcon className="w-5 h-5" />
+                Limpar Histórico
+            </button>
         </div>
+        {history.length > 0 ? (
+            <ul className="space-y-4 max-h-[28rem] overflow-y-auto pr-2 -mr-2">
+                {history.map((item) => (
+                    <li key={item.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200 hover:shadow-sm transition-shadow dark:bg-slate-700/50 dark:border-slate-700">
+                        <div>
+                            <p className="font-semibold text-slate-800 dark:text-slate-200">
+                                {item.jobDescription || `Cálculo de ${item.objectDimensions.width}x${item.objectDimensions.height}cm`}
+                            </p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                                Calculado em: {item.timestamp} - Total: <span className="font-medium">{item.budgetResult?.totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) ?? 'N/A'}</span>
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={() => onLoad(item.id)} 
+                                className="p-2 text-sky-600 hover:bg-sky-100 rounded-full transition-colors dark:text-sky-400 dark:hover:bg-sky-900/50"
+                                title="Carregar Cálculo"
+                                aria-label={`Carregar cálculo de ${item.timestamp}`}
+                            >
+                                <LoadIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </li>
+                ))}
+            </ul>
+        ) : (
+            <div className="flex-grow flex items-center justify-center">
+                <p className="text-slate-500 text-center py-4 dark:text-slate-400">Nenhum cálculo no histórico.</p>
+            </div>
+        )}
     </div>
   );
 };

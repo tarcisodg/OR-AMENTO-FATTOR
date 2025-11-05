@@ -393,7 +393,7 @@ ${downPaymentValue > 0 ? `Entrada: ${downPaymentValue.toLocaleString('pt-BR', { 
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Vertical Result Card */}
-                <div className={`relative bg-white p-6 rounded-xl shadow-lg border-2 ${isVerticalBest || isTie ? 'border-green-500' : 'border-transparent'} dark:bg-slate-800/50`}>
+                <div className="relative bg-white p-6 rounded-xl shadow-lg dark:bg-slate-800/50">
                     {isVerticalBest && <BestFitBadge />}
                     {isTie && <TieBadge />}
                     <h3 className="text-2xl font-semibold text-sky-700 mb-4 dark:text-sky-400">Orientação Vertical</h3>
@@ -412,7 +412,7 @@ ${downPaymentValue > 0 ? `Entrada: ${downPaymentValue.toLocaleString('pt-BR', { 
                 </div>
 
                 {/* Horizontal Result Card */}
-                <div className={`relative bg-white p-6 rounded-xl shadow-lg border-2 ${isHorizontalBest || isTie ? 'border-green-500' : 'border-transparent'} dark:bg-slate-800/50`}>
+                <div className="relative bg-white p-6 rounded-xl shadow-lg dark:bg-slate-800/50">
                     {isHorizontalBest && <BestFitBadge />}
                     {isTie && <TieBadge />}
                     <h3 className="text-2xl font-semibold text-sky-700 mb-4 dark:text-sky-400">Orientação Horizontal</h3>

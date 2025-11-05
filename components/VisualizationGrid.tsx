@@ -80,7 +80,14 @@ const VisualizationGrid: React.FC<VisualizationGridProps> = ({ area, object, fit
   };
 
   return (
-    <div ref={containerRef} className="w-full h-[250px] flex items-center justify-center bg-slate-100 rounded-lg p-2 dark:bg-slate-800">
+    <div
+      ref={containerRef}
+      className={`
+        relative w-full h-[250px] flex items-center justify-center bg-slate-100 
+        rounded-lg p-2 transition-all duration-300 dark:bg-slate-800
+        ${isBestFit ? 'ring-2 ring-offset-2 ring-green-500 dark:ring-offset-slate-900' : ''}
+      `}
+    >
       <div 
         style={gapVisualizationStyle}
         className="bg-slate-200 flex flex-wrap content-start overflow-hidden dark:bg-slate-700"
@@ -99,6 +106,11 @@ const VisualizationGrid: React.FC<VisualizationGridProps> = ({ area, object, fit
           ></div>
         ))}
       </div>
+       {fitResult.total > 0 && (
+        <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs font-bold px-2 py-1 rounded-md pointer-events-none backdrop-blur-sm">
+            {fitResult.itemsPerWidth} x {fitResult.itemsPerHeight}
+        </div>
+      )}
     </div>
   );
 };

@@ -145,7 +145,14 @@ const paperTypes = [
     'Couche 115g',
     'Couche 150g',
     'Couche 250g',
-    'Triplex Brilho 250g'
+    'Triplex Brilho 250g',
+    'Adesivo de Papel',
+    'Adesivo Vinil Branco',
+    'Adesivo Vinil Transparente',
+    'Papel Aspen',
+    'Papel Verge',
+    'Papel Craft',
+    'Outros'
 ];
 
 const colorOptions = ['4x0', '4x1', '4x4', '1x0', '1x1'];
@@ -735,6 +742,15 @@ const App: React.FC = () => {
                         </button>
                     )}
                 </div>
+                
+                <div className="max-w-4xl mx-auto mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+                    <SavedBudgetsList budgets={savedBudgets} onLoad={handleLoadBudget} onDelete={handleDeleteBudget} />
+                    <CalculationHistory 
+                        history={calculationHistory} 
+                        onLoad={handleLoadHistory} 
+                        onClear={handleClearHistory} 
+                    />
+                </div>
 
                 {results && (
                     <ResultsDisplay 
@@ -754,18 +770,6 @@ const App: React.FC = () => {
                         paymentMethod={paymentMethod}
                         downPayment={downPayment}
                         remainingValue={remainingValue}
-                    />
-                )}
-
-                {savedBudgets.length > 0 && (
-                    <SavedBudgetsList budgets={savedBudgets} onLoad={handleLoadBudget} onDelete={handleDeleteBudget} />
-                )}
-
-                {calculationHistory.length > 0 && (
-                    <CalculationHistory 
-                        history={calculationHistory} 
-                        onLoad={handleLoadHistory} 
-                        onClear={handleClearHistory} 
                     />
                 )}
             </main>
