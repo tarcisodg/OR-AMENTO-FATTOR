@@ -120,9 +120,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     const downPaymentValue = parseFloat(downPayment) || 0;
     const budgetText = `Olá, ${clientName || 'tudo bem'}! Conforme sua solicitação, segue orçamento para aprovação.
 
-Cliente: ${clientName || 'Não informado'}
-Telefone: ${clientPhone || 'Não informado'}
-
 Impressão de ${desiredQuantity || 'N/A'} ${jobDescription || 'item(ns)'}
 Tamanho: ${objectDimensions.width}x${objectDimensions.height} cm
 Tipo de Papel: ${paperType}

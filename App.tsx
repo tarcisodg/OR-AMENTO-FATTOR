@@ -276,12 +276,13 @@ const App: React.FC = () => {
         } catch (error) {
             console.error("Failed to load current settings from localStorage", error);
         }
+        
+        isInitialMount.current = false;
     }, []);
 
     // Save current settings to localStorage on change
     useEffect(() => {
         if (isInitialMount.current) {
-            isInitialMount.current = false;
             return;
         }
 
@@ -314,6 +315,26 @@ const App: React.FC = () => {
         extraCost, jobDescription, paperType, colors, finishing, clientName,
         clientPhone, clientFolder, downPayment, paymentMethod
     ]);
+
+    // Save budgets to localStorage on change
+    useEffect(() => {
+        if (isInitialMount.current) return;
+        try {
+            localStorage.setItem('budgets', JSON.stringify(savedBudgets));
+        } catch (error) {
+            console.error("Failed to save budgets to localStorage", error);
+        }
+    }, [savedBudgets]);
+
+    // Save calculation history to localStorage on change
+    useEffect(() => {
+        if (isInitialMount.current) return;
+        try {
+            localStorage.setItem('calculationHistory', JSON.stringify(calculationHistory));
+        } catch (error) {
+            console.error("Failed to save calculation history to localStorage", error);
+        }
+    }, [calculationHistory]);
 
     const handleObjectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setObjectDimensions({ ...objectDimensions, [e.target.name]: e.target.value });
@@ -443,7 +464,6 @@ const App: React.FC = () => {
 
         const updatedHistory = [newHistoryItem, ...calculationHistory].slice(0, 50);
         setCalculationHistory(updatedHistory);
-        localStorage.setItem('calculationHistory', JSON.stringify(updatedHistory));
     };
     
     const handleSaveBudget = () => {
@@ -463,7 +483,6 @@ const App: React.FC = () => {
                 return budget;
             });
             setSavedBudgets(updatedBudgets);
-            localStorage.setItem('budgets', JSON.stringify(updatedBudgets));
             setToast({ message: 'Orçamento atualizado com sucesso!', type: 'success' });
             setEditingBudgetId(null);
         } else {
@@ -481,7 +500,6 @@ const App: React.FC = () => {
 
             const updatedBudgets = [...savedBudgets, newBudget];
             setSavedBudgets(updatedBudgets);
-            localStorage.setItem('budgets', JSON.stringify(updatedBudgets));
             setToast({ message: 'Orçamento salvo com sucesso!', type: 'success' });
         }
     };
@@ -500,7 +518,6 @@ const App: React.FC = () => {
 
         const updatedBudgets = [...savedBudgets, newBudget];
         setSavedBudgets(updatedBudgets);
-        localStorage.setItem('budgets', JSON.stringify(updatedBudgets));
         setToast({ message: 'Orçamento salvo como uma nova cópia!', type: 'success' });
         setEditingBudgetId(null);
     };
@@ -564,7 +581,6 @@ const App: React.FC = () => {
     const handleDeleteBudget = (budgetId: string) => {
         const updatedBudgets = savedBudgets.filter(b => b.id !== budgetId);
         setSavedBudgets(updatedBudgets);
-        localStorage.setItem('budgets', JSON.stringify(updatedBudgets));
     };
 
     const handleLoadHistory = (historyId: string) => {
@@ -594,7 +610,6 @@ const App: React.FC = () => {
     
     const handleClearHistory = () => {
         setCalculationHistory([]);
-        localStorage.removeItem('calculationHistory');
     };
     
     const toCents = (val: string | number | undefined): number => {
@@ -743,15 +758,6 @@ const App: React.FC = () => {
                     )}
                 </div>
                 
-                <div className="max-w-4xl mx-auto mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-                    <SavedBudgetsList budgets={savedBudgets} onLoad={handleLoadBudget} onDelete={handleDeleteBudget} />
-                    <CalculationHistory 
-                        history={calculationHistory} 
-                        onLoad={handleLoadHistory} 
-                        onClear={handleClearHistory} 
-                    />
-                </div>
-
                 {results && (
                     <ResultsDisplay 
                         results={results} 
@@ -772,6 +778,15 @@ const App: React.FC = () => {
                         remainingValue={remainingValue}
                     />
                 )}
+                
+                <div className="max-w-4xl mx-auto mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+                    <SavedBudgetsList budgets={savedBudgets} onLoad={handleLoadBudget} onDelete={handleDeleteBudget} />
+                    <CalculationHistory 
+                        history={calculationHistory} 
+                        onLoad={handleLoadHistory} 
+                        onClear={handleClearHistory} 
+                    />
+                </div>
             </main>
         </div>
     );
