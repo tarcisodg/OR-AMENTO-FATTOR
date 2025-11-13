@@ -109,6 +109,12 @@ const CancelIcon: React.FC<{className?: string}> = ({ className }) => (
     </svg>
 );
 
+const ClearIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+);
+
 const LogoIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg 
         width="64" 
@@ -546,6 +552,11 @@ const App: React.FC = () => {
         setBudgetResult(null);
     };
 
+    const handleClearForm = () => {
+        resetForm();
+        setToast({ message: 'Formulário limpo.', type: 'info' });
+    };
+
     const handleCancelEdit = () => {
         resetForm();
         setEditingBudgetId(null);
@@ -623,6 +634,23 @@ const App: React.FC = () => {
     const remainingInCents = totalCostInCents > 0 ? totalCostInCents - downPaymentInCents : 0;
     const remainingValue = remainingInCents / 100;
 
+    const LabelWithTooltip: React.FC<{ htmlFor: string; label: string; tooltip: string; className?: string }> = ({ htmlFor, label, tooltip, className }) => (
+        <div className={`flex items-center gap-1.5 ${className}`}>
+            <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                {label}
+            </label>
+            <div className="relative flex items-center group">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 text-center text-xs text-white bg-slate-800 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10 dark:bg-black">
+                  {tooltip}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-[6px] border-t-slate-800 dark:border-t-black"></div>
+                </div>
+            </div>
+        </div>
+    );
+
     return (
         <div className="min-h-screen bg-slate-50 text-slate-800 antialiased dark:bg-slate-900 dark:text-slate-200">
             {toast && (
@@ -646,11 +674,11 @@ const App: React.FC = () => {
                      <div className="md:col-span-2 bg-white p-6 rounded-xl shadow-md dark:bg-slate-800">
                         <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 mb-6 dark:text-slate-300 dark:border-slate-700">Tamanho ou Formato</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-6 items-end">
-                            <InputGroup label="Largura do Objeto (cm)" name="width" value={objectDimensions.width} onChange={handleObjectChange} placeholder="ex: 10" icon={<WidthIcon className="w-5 h-5 text-slate-400" />} />
-                            <InputGroup label="Altura do Objeto (cm)" name="height" value={objectDimensions.height} onChange={handleObjectChange} placeholder="ex: 5" icon={<HeightIcon className="w-5 h-5 text-slate-400" />} />
-                            <InputGroup label="Sangria / Espaço (cm)" name="gap" value={gap} onChange={handleGapChange} placeholder="ex: 0.3" icon={<GapIcon className="w-5 h-5 text-slate-400" />} />
+                            <InputGroup label="Largura do Objeto (cm)" name="width" value={objectDimensions.width} onChange={handleObjectChange} placeholder="ex: 10" icon={<WidthIcon className="w-5 h-5 text-slate-400" />} tooltip="Insira a largura do item individual em centímetros. Use vírgula ou ponto para decimais. Ex: 10,5" />
+                            <InputGroup label="Altura do Objeto (cm)" name="height" value={objectDimensions.height} onChange={handleObjectChange} placeholder="ex: 5" icon={<HeightIcon className="w-5 h-5 text-slate-400" />} tooltip="Insira a altura do item individual em centímetros. Use vírgula ou ponto para decimais. Ex: 5,0" />
+                            <InputGroup label="Sangria / Espaço (cm)" name="gap" value={gap} onChange={handleGapChange} placeholder="ex: 0.3" icon={<GapIcon className="w-5 h-5 text-slate-400" />} tooltip="Insira o espaçamento entre os itens em centímetros. Essencial para o corte. Ex: 0.3" />
                             <div>
-                                <label htmlFor="paper-size" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Tamanho do Papel</label>
+                                <LabelWithTooltip htmlFor="paper-size" label="Tamanho do Papel" tooltip="Selecione o formato do papel a ser usado para a impressão. As medidas são exibidas em centímetros." className="mb-1" />
                                 <div className="relative rounded-md shadow-sm">
                                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><PaperIcon className="w-5 h-5 text-slate-400" /></div>
                                     <select id="paper-size" name="paper-size" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={selectedPaperSize} onChange={handlePaperSizeChange}>
@@ -664,11 +692,11 @@ const App: React.FC = () => {
                     <div className="bg-white p-6 rounded-xl shadow-md space-y-6 dark:bg-slate-800">
                         <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 dark:text-slate-300 dark:border-slate-700">Orçamento e Detalhes do Trabalho</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <InputGroup label="Custo por Página (R$)" name="cost" value={costPerPage} onChange={handleCostChange} placeholder="ex: 2.50" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} />
-                            <InputGroup label="Quantidade Desejada" name="quantity" value={desiredQuantity} onChange={handleQuantityChange} placeholder="ex: 1000" icon={<QuantityIcon className="w-5 h-5 text-slate-400" />} />
-                            <InputGroup label="Custo Extra (Acabamento, etc)" name="extra" value={extraCost} onChange={handleExtraCostChange} placeholder="ex: 50.00" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} />
+                            <InputGroup label="Custo por Página (R$)" name="cost" value={costPerPage} onChange={handleCostChange} placeholder="ex: 2.50" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} tooltip="Insira o custo de impressão de uma única página. Este valor será multiplicado pelo número de páginas necessárias." />
+                            <InputGroup label="Quantidade Desejada" name="quantity" value={desiredQuantity} onChange={handleQuantityChange} placeholder="ex: 1000" icon={<QuantityIcon className="w-5 h-5 text-slate-400" />} tooltip="Insira o número total de itens que deseja produzir. Ex: 1000 cartões." />
+                            <InputGroup label="Custo Extra (Acabamento, etc)" name="extra" value={extraCost} onChange={handleExtraCostChange} placeholder="ex: 50.00" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} tooltip="Adicione custos adicionais como laminação, corte especial, arte, etc." />
                             <div>
-                                <label htmlFor="colors" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Cores</label>
+                                <LabelWithTooltip htmlFor="colors" label="Cores" tooltip="Selecione a configuração de cores da impressão (ex: 4x0 = colorido frente, verso em branco)." className="mb-1" />
                                 <div className="relative rounded-md shadow-sm">
                                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><ColorsIcon className="w-5 h-5 text-slate-400" /></div>
                                     <select id="colors" name="colors" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={colors} onChange={handleColorsChange}>
@@ -677,7 +705,7 @@ const App: React.FC = () => {
                                 </div>
                             </div>
                             <div className="sm:col-span-2">
-                                <label htmlFor="paper-type" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Tipo de Papel</label>
+                                <LabelWithTooltip htmlFor="paper-type" label="Tipo de Papel" tooltip="Escolha o tipo e a gramatura do papel." className="mb-1" />
                                 <div className="relative rounded-md shadow-sm">
                                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><PaperIcon className="w-5 h-5 text-slate-400" /></div>
                                     <select id="paper-type" name="paper-type" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={paperType} onChange={handlePaperTypeChange}>
@@ -686,7 +714,7 @@ const App: React.FC = () => {
                                 </div>
                             </div>
                             <div className="sm:col-span-2">
-                                <label htmlFor="finishing" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Acabamento</label>
+                                <LabelWithTooltip htmlFor="finishing" label="Acabamento" tooltip="Selecione o tipo de acabamento final para o produto." className="mb-1" />
                                 <div className="relative rounded-md shadow-sm">
                                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><FinishingIcon className="w-5 h-5 text-slate-400" /></div>
                                     <select id="finishing" name="finishing" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={finishing} onChange={handleFinishingChange}>
@@ -695,7 +723,7 @@ const App: React.FC = () => {
                                 </div>
                             </div>
                             <div className="sm:col-span-2">
-                                <label htmlFor="job-description" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Descrição do Trabalho</label>
+                                <LabelWithTooltip htmlFor="job-description" label="Descrição do Trabalho" tooltip="Descreva o trabalho a ser feito. Ex: Cartões de visita para a Loja X. Esta informação será usada nos orçamentos." className="mb-1" />
                                 <div className="relative rounded-md shadow-sm">
                                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 pt-2"><DescriptionIcon className="w-5 h-5 text-slate-400" /></div>
                                     <textarea id="job-description" name="job-description" rows={3} className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400" placeholder="Ex: Cartões de visita, adesivos..." value={jobDescription} onChange={handleJobDescriptionChange} />
@@ -707,19 +735,19 @@ const App: React.FC = () => {
                     <div className="bg-white p-6 rounded-xl shadow-md space-y-6 dark:bg-slate-800">
                         <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 dark:text-slate-300 dark:border-slate-700">Dados do Cliente</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <div className="sm:col-span-2"><InputGroup label="Cliente" name="clientName" value={clientName} onChange={handleClientNameChange} placeholder="Nome do Cliente" icon={<UserIcon className="w-5 h-5 text-slate-400" />} type="text" /></div>
-                            <InputGroup label="Telefone" name="clientPhone" value={clientPhone} onChange={handleClientPhoneChange} placeholder="(00) 0000-0000" icon={<PhoneIcon className="w-5 h-5 text-slate-400" />} type="tel" />
-                            <InputGroup label="Pasta" name="clientFolder" value={clientFolder} onChange={handleClientFolderChange} placeholder="Nome da pasta" icon={<FolderIcon className="w-5 h-5 text-slate-400" />} type="text" />
-                            <InputGroup label="Valor de Entrada (R$)" name="downPayment" value={downPayment} onChange={handleDownPaymentChange} placeholder="ex: 100.00" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} />
+                            <div className="sm:col-span-2"><InputGroup label="Cliente" name="clientName" value={clientName} onChange={handleClientNameChange} placeholder="Nome do Cliente" icon={<UserIcon className="w-5 h-5 text-slate-400" />} type="text" tooltip="Nome do cliente ou empresa para identificação no orçamento." /></div>
+                            <InputGroup label="Telefone" name="clientPhone" value={clientPhone} onChange={handleClientPhoneChange} placeholder="(00) 0000-0000" icon={<PhoneIcon className="w-5 h-5 text-slate-400" />} type="tel" tooltip="Telefone de contato do cliente." />
+                            <InputGroup label="Pasta" name="clientFolder" value={clientFolder} onChange={handleClientFolderChange} placeholder="Nome da pasta" icon={<FolderIcon className="w-5 h-5 text-slate-400" />} type="text" tooltip="Nome da pasta onde os arquivos do cliente (arte, etc.) estão salvos no computador."/>
+                            <InputGroup label="Valor de Entrada (R$)" name="downPayment" value={downPayment} onChange={handleDownPaymentChange} placeholder="ex: 100.00" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} tooltip="Valor pago pelo cliente como sinal ou adiantamento." />
                             <div>
-                                <label htmlFor="remainingValue" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Valor Restante</label>
+                                <LabelWithTooltip htmlFor="remainingValue" label="Valor Restante" tooltip="Valor restante a ser pago pelo cliente (calculado automaticamente)." className="mb-1" />
                                 <div className="relative rounded-md shadow-sm">
                                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><MoneyIcon className="w-5 h-5 text-slate-400" /></div>
                                     <input type="text" name="remainingValue" id="remainingValue" value={remainingValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} className="block w-full rounded-md border-slate-300 pl-10 py-2 bg-slate-100 text-slate-500 cursor-not-allowed sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-400" disabled />
                                 </div>
                             </div>
                             <div className="sm:col-span-2">
-                                <label htmlFor="payment-method" className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Pagamento</label>
+                                <LabelWithTooltip htmlFor="payment-method" label="Pagamento" tooltip="Forma de pagamento escolhida pelo cliente." className="mb-1" />
                                 <div className="relative rounded-md shadow-sm">
                                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><CreditCardIcon className="w-5 h-5 text-slate-400" /></div>
                                     <select id="payment-method" name="payment-method" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={paymentMethod} onChange={handlePaymentMethodChange}>
@@ -751,10 +779,16 @@ const App: React.FC = () => {
                             </button>
                         </>
                     ) : (
-                        <button onClick={handleSaveBudget} className="bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Salvar os dados atuais como um novo orçamento">
-                            <SaveIcon className="w-5 h-5" />
-                            Salvar Orçamento
-                        </button>
+                        <>
+                            <button onClick={handleSaveBudget} className="bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Salvar os dados atuais como um novo orçamento">
+                                <SaveIcon className="w-5 h-5" />
+                                Salvar Orçamento
+                            </button>
+                            <button onClick={handleClearForm} className="bg-slate-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Limpar todos os campos do formulário">
+                                <ClearIcon className="w-5 h-5" />
+                                Limpar
+                            </button>
+                        </>
                     )}
                 </div>
                 
