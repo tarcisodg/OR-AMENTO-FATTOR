@@ -115,26 +115,6 @@ const ClearIcon: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
-const LogoIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg 
-        width="64" 
-        height="64" 
-        viewBox="0 0 64 64" 
-        fill="none" 
-        xmlns="http://www.w3.org/2000/svg"
-        className={className}
-        aria-label="APP Orçamento Gráfica Logo"
-    >
-        <rect width="64" height="64" rx="12" fill="#f1f5f9" className="dark:fill-slate-800"/> 
-        <rect x="12" y="12" width="40" height="40" rx="6" fill="#e2e8f0" className="dark:fill-slate-700"/> 
-        <rect x="16" y="16" width="10" height="16" rx="2" fill="#0ea5e9" className="dark:fill-sky-600"/>
-        <rect x="28" y="16" width="10" height="16" rx="2" fill="#0ea5e9" className="dark:fill-sky-600"/>
-        <rect x="40" y="16" width="10" height="16" rx="2" fill="#0ea5e9" className="dark:fill-sky-600"/>
-        <rect x="16" y="34" width="10" height="16" rx="2" fill="#0ea5e9" className="dark:fill-sky-600"/>
-        <rect x="28" y="34" width="10" height="16" rx="2" fill="#0ea5e9" className="dark:fill-sky-600"/>
-    </svg>
-);
-
 const paperSizes: { [key: string]: { width: string; height: string; name: string } } = {
     'A4': { width: '20', height: '28', name: 'A4 (20x28 cm)' },
     'A3': { width: '28', height: '40', name: 'A3 (28x40 cm)' },
@@ -665,7 +645,6 @@ const App: React.FC = () => {
                     <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
                 </div>
                 <header className="text-center mb-8 md:mb-12">
-                    <LogoIcon className="w-16 h-16 mx-auto mb-4" />
                     <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-slate-50">Calculadora de Encaixe e Orçamento</h1>
                     <p className="mt-2 text-lg text-slate-600 dark:text-slate-400">Otimize o uso do material e calcule os custos de produção.</p>
                 </header>

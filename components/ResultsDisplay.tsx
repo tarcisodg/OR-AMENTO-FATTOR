@@ -8,6 +8,7 @@ const { jsPDF } = window.jspdf;
 // @ts-ignore
 declare const html2canvas: any;
 
+const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAXgAAACgCAMAAACu2TykAAAAQlBMVEUAAAAA//8AgP8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//+0tLSy+2I1AAAAGXRSTlMA4s59DA/Z0dC7uJ+Ef24xGAb8+fTy8fHwP9a0AAABJElEQVR42u3Y2w6DIAwFUKKAEoOi/P8vO9C6Na7WVusfC+csPIwkt4sBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPlJ63xJtL+3u/fHj6N3z3/a9fXv6/3313r/ft/b/+/J+d82t5/++vB/n3v7/tW+9/7/t8/695tZ7P4/78351Dby9/d/b8/58v/rfe/+vbf3vP2vfAwAAAADcSm8v/3e2/v8874839v73t7/97b+/v+3958/6vbe3v7/97b+/v+39549/2/v7/vffv+39/QcAAACA13l7+7+39/8874839v73t7/97b+/v+3958/6vbe3v7/97b+/v+39549/2/v7/vffv+39/QcAAACA13l7+7+39/8874839v73t7/97b+/v+3958/6vbe3v7/97b+/v+39549/2/v7/vffv+39/QcAAACA13l7+7+39/8874839v73t7/97b+/v+3958/6vbe3v7/97b+/v+39549/2/v7/vffv+39/QcAAACA13l7+7+39/8874839v73t7/97b+/v+3958/6vbe3v7/97b+/v+39549/2/v7/vffv+39/QcAAACA13l7+7+39/8874839v73t7/97b+/v+3958/6vbe3v7/97b+/v+39549/2/v7/vffv+39/QcAAACA13l7+7+39/8874839v73t7/97b+/v+3958/6vbe3v7/97b+/v+39549/2/v7/vffv+39/QcAAACA13l7+7+39/8874839v73t7/97b+/v+3958/6vbe3v7/97b+/v+39549/2/v7/vffv+39/QcAAACA13l7+7+39/8874839v73t7/97b+/v+3958/6vbe3v7/97b+/v+39549/2/v7/vffv+39/QcAAACA14W3v/+/7f0BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD47A8gLgS3TqF+xwAAAABJRU5ErkJggg==";
 
 interface ResultsDisplayProps {
   results: CalculationResults;
@@ -61,14 +62,6 @@ const PrintIcon: React.FC<{className?: string}> = ({ className }) => (
 const DownloadIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-    </svg>
-);
-
-const LogoPlaceholder: React.FC<{className?: string}> = ({ className }) => (
-    <svg className={className} viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-        <rect width="120" height="120" rx="15" fill="#e0f2fe"/>
-        <path d="M30 90 L60 30 L90 90 Z" fill="#0ea5e9" />
-        <circle cx="60" cy="75" r="12" fill="#facc15" />
     </svg>
 );
 
@@ -485,9 +478,8 @@ ${downPaymentValue > 0 ? `Entrada: ${downPaymentValue.toLocaleString('pt-BR', { 
                              <div ref={orderModalContentRef} className="p-10 bg-white font-sans text-slate-800 text-sm" id="printable-order">
                                 <header className="flex justify-between items-start pb-6 mb-8 border-b border-slate-200">
                                     <div className="flex items-center gap-5">
-                                        <LogoPlaceholder className="w-20 h-20" />
+                                        <img src={logoBase64} alt="Fattorprint Gráfica Digital Logo" className="w-40" />
                                         <div>
-                                            <h1 className="text-3xl font-bold text-slate-900">FATTORPRINT GRÁFICA DIGITAL</h1>
                                             <p className="text-slate-500 mt-1">Av. Inglaterra, 603 B - Centro - Cambé/PR</p>
                                             <p className="text-slate-500">(43) 3253-9039 / 99601-1313</p>
                                         </div>
