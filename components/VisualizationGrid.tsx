@@ -63,7 +63,6 @@ const VisualizationGrid: React.FC<VisualizationGridProps> = ({ area, object, fit
   const remainingWidth = area.width - totalWidthUsed;
   const remainingHeight = area.height - totalHeightUsed;
   const areaTooltip = `Área de sobra: ${remainingWidth.toFixed(2)}cm (largura) x ${remainingHeight.toFixed(2)}cm (altura)`;
-  const objectTooltip = `Objeto: ${object.width.toFixed(2)}cm x ${object.height.toFixed(2)}cm`;
 
   // Style for the gap visualization using a subtle pattern
   const gapColor = isDarkMode ? '#475569' : '#d1d5db'; // slate-600 for dark, slate-300 for light
@@ -93,18 +92,28 @@ const VisualizationGrid: React.FC<VisualizationGridProps> = ({ area, object, fit
         className="bg-slate-200 flex flex-wrap content-start overflow-hidden dark:bg-slate-700"
         title={areaTooltip}
       >
-        {fitResult.total > 0 && Array.from({ length: fitResult.total }).map((_, i) => (
-          <div
-            key={i}
-            style={renderedObjectStyle}
-            className={`
-              box-border flex-shrink-0
-              ${isBestFit ? 'bg-green-500/80 border-green-700' : 'bg-sky-500/80 border-sky-700'}
-              border-2 border-dashed
-            `}
-            title={objectTooltip}
-          ></div>
-        ))}
+        {fitResult.total > 0 && Array.from({ length: fitResult.total }).map((_, i) => {
+          const tooltipText = `Obj: ${object.width.toFixed(2)} x ${object.height.toFixed(2)} cm | Sangria: ${gap.toFixed(2)} cm`;
+          return (
+            <div
+              key={i}
+              style={renderedObjectStyle}
+              className="relative group box-border flex-shrink-0"
+            >
+              <div
+                className={`
+                  w-full h-full
+                  ${isBestFit ? 'bg-green-500/80 border-green-700' : 'bg-sky-500/80 border-sky-700'}
+                  border-2 border-dashed
+                `}
+              />
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-xs p-2 text-center text-xs text-white bg-slate-800 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10 dark:bg-black whitespace-nowrap">
+                {tooltipText}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-[6px] border-t-slate-800 dark:border-t-black"></div>
+              </div>
+            </div>
+          );
+        })}
       </div>
        {fitResult.total > 0 && (
         <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs font-bold px-2 py-1 rounded-md pointer-events-none backdrop-blur-sm">

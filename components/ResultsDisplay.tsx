@@ -132,7 +132,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     const isHorizontalBest = bestOrientation === 'horizontal';
     const isTie = bestOrientation === 'tie';
 
-    const downPaymentValue = parseFloat(downPayment) || 0;
     const budgetText = `Olá, ${clientName || 'tudo bem'}! Conforme sua solicitação, segue orçamento para aprovação.
 
 Impressão de ${desiredQuantity || 'N/A'} ${jobDescription || 'item(ns)'}
@@ -143,7 +142,7 @@ Acabamento: ${finishing || 'Não especificado'}
 
 Valor Total: ${budgetResult?.totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) || 'N/A'}
 Forma de Pagamento: ${paymentMethod}
-${downPaymentValue > 0 ? `Entrada: ${downPaymentValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n` : ''}${downPaymentValue > 0 ? `Restante: ${remainingValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n` : ''}
+
 *Observações:*
 - Produção 2 a 4 dias úteis
 - O corte e cores podem sofrer variação de 5%
