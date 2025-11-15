@@ -8,7 +8,6 @@ const { jsPDF } = window.jspdf;
 // @ts-ignore
 declare const html2canvas: any;
 
-const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAXgAAACgCAMAAACu2TykAAAAQlBMVEUAAAAA//8AgP8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//+0tLSy+2I1AAAAGXRSTlMA4s59DA/Z0dC7uJ+Ef24xGAb8+fTy8fHwP9a0AAABJElEQVR42u3Y2w6DIAwFUKKAEoOi/P8vO9C6Na7WVusfC+csPIwkt4sBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPlJ63xJtL+3u/fHj6N3z3/a9fXv6/3313r/ft/b/+/J+d82t5/++vB/n3v7/tW+9/7/t8/695tZ7P4/78351Dby9/d/b8/58v/rfe/+vbf3vP2vfAwAAAADcSm8v/3e2/v8874839v73t7/97b+/v+3958/6vbe3v7/97b+/v+39549/2/v7/vffv+39/QcAAACA13l7+7+39/8874839v73t7/97b+/v+3958/6vbe3v7/97b+/v+39549/2/v7/vffv+39/QcAAACA13l7+7+39/8874839v73t7/97b+/v+3958/6vbe3v7/97b+/v+39549/2/v7/vffv+39/QcAAACA13l7+7+39/8874839v73t7/97b+/v+3958/6vbe3v7/97b+/v+39549/2/v7/vffv+39/QcAAACA13l7+7+39/8874839v73t7/97b+/v+3958/6vbe3v7/97b+/v+39549/2/v7/vffv+39/QcAAACA13l7+7+39/8874839v73t7/97b+/v+3958/6vbe3v7/97b+/v+39549/2/v7/vffv+39/QcAAACA13l7+7+39/8874839v73t7/97b+/v+3958/6vbe3v7/97b+/v+39549/2/v7/vffv+39/QcAAACA13l7+7+39/8874839v73t7/97b+/v+3958/6vbe3v7/97b+/v+39549/2/v7/vffv+39/QcAAACA13l7+7+39/8874839v73t7/97b+/v+3958/6vbe3v7/97b+/v+39549/2/v7/vffv+39/QcAAACA14W3v/+/7f0BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD47A8gLgS3TqF+xwAAAABJRU5ErkJggg==";
 
 interface ResultsDisplayProps {
   results: CalculationResults;
@@ -64,6 +63,29 @@ const DownloadIcon: React.FC<{ className?: string }> = ({ className }) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
     </svg>
 );
+
+const FattorprintLogo: React.FC<{ className?: string, isPrint?: boolean }> = ({ className, isPrint }) => {
+    const orange = "#F26522";
+    const blue = "#0F2D4A";
+    const fontFamily = isPrint ? "'Helvetica', 'Arial', sans-serif" : "'Inter', sans-serif";
+
+    return (
+        <svg
+            viewBox="0 0 380 160"
+            xmlns="http://www.w3.org/2000/svg"
+            className={className}
+            aria-label="Fattorprint Gráfica Digital Logo"
+        >
+            <path d="M0 0 H380 V80 C350 70 340 80 310 80 S290 70 260 70 S230 80 200 80 S170 70 140 70 S110 80 80 80 S50 70 20 70 C10 70 0 80 0 80 Z" fill={orange}/>
+            <text x="190" y="110" fontFamily={fontFamily} fontSize="48" fontWeight="800" fill={blue} textAnchor="middle">
+                FATTORPRINT
+            </text>
+            <text x="190" y="145" fontFamily={fontFamily} fontSize="24" fontWeight="500" fill={blue} textAnchor="middle">
+                GRÁFICA DIGITAL
+            </text>
+        </svg>
+    );
+};
 
 const MoneyIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -343,7 +365,7 @@ ${downPaymentValue > 0 ? `Entrada: ${downPaymentValue.toLocaleString('pt-BR', { 
                         <div className="flex items-center justify-between text-lg">
                              <div className="flex items-center text-slate-600 dark:text-slate-400">
                                 <FinishingIcon className="w-5 h-5 mr-2 text-slate-400" />
-                                <span>Custo extra (acabamento):</span>
+                                <span>Custo extra:</span>
                             </div>
                             <span className="font-semibold text-slate-800 dark:text-slate-200">{budgetResult.extraCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                         </div>
@@ -478,7 +500,7 @@ ${downPaymentValue > 0 ? `Entrada: ${downPaymentValue.toLocaleString('pt-BR', { 
                              <div ref={orderModalContentRef} className="p-10 bg-white font-sans text-slate-800 text-sm" id="printable-order">
                                 <header className="flex justify-between items-start pb-6 mb-8 border-b border-slate-200">
                                     <div className="flex items-center gap-5">
-                                        <img src={logoBase64} alt="Fattorprint Gráfica Digital Logo" className="w-40" />
+                                        <FattorprintLogo className="w-40" isPrint={true} />
                                         <div>
                                             <p className="text-slate-500 mt-1">Av. Inglaterra, 603 B - Centro - Cambé/PR</p>
                                             <p className="text-slate-500">(43) 3253-9039 / 99601-1313</p>

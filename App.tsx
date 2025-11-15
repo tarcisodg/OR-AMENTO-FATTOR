@@ -148,9 +148,13 @@ const finishingOptions = [
     'Nenhum',
     'Laminação Brilho',
     'Laminação Fosca',
-    'Corte Personalizado',
-    'Furo Tag',
     'Plastificação',
+    'Corte',
+    'Corte Personalizado',
+    'Cantos Redondos',
+    'Vinco / Dobra',
+    'Serrilha',
+    'Furo Tag',
     'Encadernação Espiral',
     'Encadernação Wire-O',
     'Outros'
@@ -645,7 +649,7 @@ const App: React.FC = () => {
                     <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
                 </div>
                 <header className="text-center mb-8 md:mb-12">
-                    <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-slate-50">Calculadora de Encaixe e Orçamento</h1>
+                    <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-slate-50">Orçamento para Impressão</h1>
                     <p className="mt-2 text-lg text-slate-600 dark:text-slate-400">Otimize o uso do material e calcule os custos de produção.</p>
                 </header>
 
@@ -673,7 +677,7 @@ const App: React.FC = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <InputGroup label="Custo por Página (R$)" name="cost" value={costPerPage} onChange={handleCostChange} placeholder="ex: 2.50" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} tooltip="Insira o custo de impressão de uma única página. Este valor será multiplicado pelo número de páginas necessárias." />
                             <InputGroup label="Quantidade Desejada" name="quantity" value={desiredQuantity} onChange={handleQuantityChange} placeholder="ex: 1000" icon={<QuantityIcon className="w-5 h-5 text-slate-400" />} tooltip="Insira o número total de itens que deseja produzir. Ex: 1000 cartões." />
-                            <InputGroup label="Custo Extra (Acabamento, etc)" name="extra" value={extraCost} onChange={handleExtraCostChange} placeholder="ex: 50.00" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} tooltip="Adicione custos adicionais como laminação, corte especial, arte, etc." />
+                            <InputGroup label="Custo Extra" name="extra" value={extraCost} onChange={handleExtraCostChange} placeholder="ex: 50.00" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} tooltip="Adicione custos adicionais como laminação, corte especial, arte, etc." />
                             <div>
                                 <LabelWithTooltip htmlFor="colors" label="Cores" tooltip="Selecione a configuração de cores da impressão (ex: 4x0 = colorido frente, verso em branco)." className="mb-1" />
                                 <div className="relative rounded-md shadow-sm">
