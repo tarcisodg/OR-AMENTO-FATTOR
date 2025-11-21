@@ -355,15 +355,31 @@ const App: React.FC = () => {
     const handlePaymentMethodChange = (e: React.ChangeEvent<HTMLSelectElement>) => setPaymentMethod(e.target.value);
 
     const handleClientPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let value = e.target.value.replace(/\D/g, '').substring(0, 10);
-        if (value.length > 6) {
-            value = `(${value.substring(0, 2)}) ${value.substring(2, 6)}-${value.substring(6)}`;
-        } else if (value.length > 2) {
-            value = `(${value.substring(0, 2)}) ${value.substring(2)}`;
-        } else if (value.length > 0) {
-            value = `(${value}`;
+        const rawValue = e.target.value.replace(/\D/g, '').substring(0, 11);
+        const len = rawValue.length;
+
+        if (len === 0) {
+            setClientPhone('');
+            return;
         }
-        setClientPhone(value);
+
+        if (len <= 2) {
+            setClientPhone(`(${rawValue}`);
+            return;
+        }
+
+        if (len <= 6) {
+            setClientPhone(`(${rawValue.substring(0, 2)}) ${rawValue.substring(2)}`);
+            return;
+        }
+        
+        if (len < 11) { // 7 to 10 digits, formatted as landline
+            setClientPhone(`(${rawValue.substring(0, 2)}) ${rawValue.substring(2, 6)}-${rawValue.substring(6)}`);
+            return;
+        }
+
+        // 11 digits, formatted as mobile
+        setClientPhone(`(${rawValue.substring(0, 2)}) ${rawValue.substring(2, 7)}-${rawValue.substring(7)}`);
     };
 
     const handleCalculate = () => {
@@ -719,7 +735,7 @@ const App: React.FC = () => {
                         <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 dark:text-slate-300 dark:border-slate-700">Dados do Cliente</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div className="sm:col-span-2"><InputGroup label="Cliente" name="clientName" value={clientName} onChange={handleClientNameChange} placeholder="Nome do Cliente" icon={<UserIcon className="w-5 h-5 text-slate-400" />} type="text" tooltip="Nome do cliente ou empresa para identificação no orçamento." /></div>
-                            <InputGroup label="Telefone" name="clientPhone" value={clientPhone} onChange={handleClientPhoneChange} placeholder="(00) 0000-0000" icon={<PhoneIcon className="w-5 h-5 text-slate-400" />} type="tel" tooltip="Telefone de contato do cliente." />
+                            <InputGroup label="Telefone" name="clientPhone" value={clientPhone} onChange={handleClientPhoneChange} placeholder="(00) 00000-0000" icon={<PhoneIcon className="w-5 h-5 text-slate-400" />} type="tel" tooltip="Telefone de contato do cliente." />
                             <InputGroup label="Pasta" name="clientFolder" value={clientFolder} onChange={handleClientFolderChange} placeholder="Nome da pasta" icon={<FolderIcon className="w-5 h-5 text-slate-400" />} type="text" tooltip="Nome da pasta onde os arquivos do cliente (arte, etc.) estão salvos no computador."/>
                             <InputGroup label="Valor de Entrada (R$)" name="downPayment" value={downPayment} onChange={handleDownPaymentChange} placeholder="ex: 100.00" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} tooltip="Valor pago pelo cliente como sinal ou adiantamento." />
                             <div>
