@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import type { CalculationResults, BudgetResult } from '../types';
 import VisualizationGrid from './VisualizationGrid';
@@ -93,6 +94,13 @@ const MoneyIcon: React.FC<{className?: string}> = ({ className }) => (
     </svg>
 );
 
+const DiscountIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
+    </svg>
+);
+
 const FinishingIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.562L16.25 21.75l-.648-1.188a2.25 2.25 0 01-1.47-1.47l-1.188-.648 1.188-.648a2.25 2.25 0 011.47-1.47l.648-1.188.648 1.188a2.25 2.25 0 011.47 1.47l1.188.648-1.188.648a2.25 2.25 0 01-1.47 1.47z" />
@@ -140,7 +148,10 @@ Tipo de Papel: ${paperType}
 Cores: ${colors}
 Acabamento: ${finishing || 'Não especificado'}
 
-Valor Total: ${budgetResult?.totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) || 'N/A'}
+Subtotal: ${(budgetResult?.subtotal ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+Custos Extras: ${(budgetResult?.extraCost ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+${(budgetResult?.discount ?? 0) > 0 ? `Desconto: - ${(budgetResult?.discount ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n` : ''}
+*Valor Total: ${budgetResult?.totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) || 'N/A'}*
 Forma de Pagamento: ${paymentMethod}
 
 *Observações:*
@@ -368,6 +379,17 @@ Forma de Pagamento: ${paymentMethod}
                             </div>
                             <span className="font-semibold text-slate-800 dark:text-slate-200">{budgetResult.extraCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                         </div>
+                        {budgetResult.discount > 0 && (
+                            <div className="flex items-center justify-between text-lg text-red-600 dark:text-red-400">
+                                <div className="flex items-center">
+                                    <DiscountIcon className="w-5 h-5 mr-2" />
+                                    <span>Desconto:</span>
+                                </div>
+                                <span className="font-semibold">
+                                    - {budgetResult.discount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                </span>
+                            </div>
+                        )}
                          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4 flex justify-between items-center dark:bg-green-900/20 dark:border-green-800">
                             <span className="text-xl font-bold text-green-800 dark:text-green-300">Custo Total:</span>
                             <span className="text-3xl font-extrabold text-green-700 dark:text-green-400">
@@ -527,15 +549,24 @@ Forma de Pagamento: ${paymentMethod}
                                             <div className="border border-slate-200 rounded-lg p-4">
                                                 <table className="w-full">
                                                     <tbody>
-                                                        <tr className="border-b border-slate-100"><td className="py-2 text-slate-600">Pagamento:</td><td className="py-2 text-right font-medium">{paymentMethod}</td></tr>
-                                                        <tr className="border-b border-slate-100"><td className="py-2 text-slate-600">Entrada:</td><td className="py-2 text-right font-medium">{(parseFloat(downPayment) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>
-                                                        <tr><td className="py-2 text-slate-600">Restante:</td><td className="py-2 text-right font-medium">{remainingValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>
+                                                        <tr className="border-b border-slate-100"><td className="py-2 text-slate-600">Subtotal:</td><td className="py-2 text-right font-medium">{(budgetResult?.subtotal ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>
+                                                        <tr className="border-b border-slate-100"><td className="py-2 text-slate-600">Extras:</td><td className="py-2 text-right font-medium">{(budgetResult?.extraCost ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>
+                                                        {(budgetResult?.discount ?? 0) > 0 && (
+                                                            <tr className="border-b border-slate-100"><td className="py-2 text-red-500">Desconto:</td><td className="py-2 text-right font-medium text-red-500">- {(budgetResult?.discount ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>
+                                                        )}
                                                     </tbody>
                                                 </table>
                                                 <div className="mt-4 pt-4 border-t-2 border-slate-300 flex justify-between items-baseline">
                                                     <span className="font-bold text-base text-slate-800">Valor Total:</span>
                                                     <span className="font-bold text-green-600 text-2xl">{budgetResult?.totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                                                 </div>
+                                                <table className="w-full mt-4 pt-4 border-t border-slate-200">
+                                                    <tbody>
+                                                        <tr className="border-b border-slate-100"><td className="py-2 text-slate-600">Pagamento:</td><td className="py-2 text-right font-medium">{paymentMethod}</td></tr>
+                                                        <tr className="border-b border-slate-100"><td className="py-2 text-slate-600">Entrada:</td><td className="py-2 text-right font-medium">{(parseFloat(downPayment) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>
+                                                        <tr><td className="py-2 text-slate-600">Restante:</td><td className="py-2 text-right font-medium">{remainingValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>
+                                                    </tbody>
+                                                </table>
                                             </div>
                                         </section>
                                     </div>
@@ -623,6 +654,7 @@ Forma de Pagamento: ${paymentMethod}
                   areaDimensions={areaDimensions}
                   verticalFit={results.vertical}
                   horizontalFit={results.horizontal}
+                  finishing={finishing}
                 />
             </div>
         </div>

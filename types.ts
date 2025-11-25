@@ -20,6 +20,7 @@ export interface BudgetResult {
   totalPages: number;
   subtotal: number;
   extraCost: number;
+  discount: number;
   totalCost: number;
   itemsPerPage: number;
 }
@@ -34,6 +35,7 @@ export interface SavedBudget {
   costPerPage: string;
   desiredQuantity: string;
   extraCost: string;
+  discount: string;
   gap: string;
   jobDescription: string;
   paperType: string;
@@ -57,6 +59,7 @@ export interface CalculationHistoryItem {
   costPerPage: string;
   desiredQuantity: string;
   extraCost: string;
+  discount: string;
   gap: string;
   jobDescription: string;
   paperType: string;
@@ -69,4 +72,13 @@ export interface CalculationHistoryItem {
   paymentMethod: string;
   results: CalculationResults | null;
   budgetResult: BudgetResult | null;
+}
+
+export interface PresetValues {
+    jobDescription?: string;
+    paperType?: string;
+    objectDimensions?: Dimensions;
+    selectedPaperSize?: string;
+    finishing?: string;
+    colors?: string;
 }

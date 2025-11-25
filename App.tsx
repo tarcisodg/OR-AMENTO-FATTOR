@@ -1,11 +1,13 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import type { Dimensions, CalculationResults, BudgetResult, SavedBudget, CalculationHistoryItem } from './types';
+import type { Dimensions, CalculationResults, BudgetResult, SavedBudget, CalculationHistoryItem, PresetValues } from './types';
 import InputGroup from './components/InputGroup';
 import ResultsDisplay from './components/ResultsDisplay';
 import SavedBudgetsList from './components/SavedBudgetsList';
 import CalculationHistory from './components/HistoryLog';
 import Toast from './components/Toast';
 import ThemeToggle from './components/ThemeToggle';
+import PresetsMenu from './components/PresetsMenu';
 
 const WidthIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -28,6 +30,13 @@ const GapIcon: React.FC<{className?: string}> = ({ className }) => (
 const MoneyIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414-.336.75-.75.75h-1.5m1.5 0v.375c0 .621-.504 1.125-1.125 1.125h-17.25c-.621 0-1.125-.504-1.125-1.125V6.75m19.5 0v9m-18-9h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v1.5a1.5 1.5 0 001.5 1.5m16.5 0h.75a.75.75 0 01.75.75v.75m0 0v.375c0 .621-.504 1.125-1.125 1.125H3.75c-.621 0-1.125-.504-1.125-1.125V12m18 0v-3.375c0-.621-.504-1.125-1.125-1.125H3.75c-.621 0-1.125-.504-1.125 1.125V12m0 0h18" />
+    </svg>
+);
+
+const DiscountIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
     </svg>
 );
 
@@ -190,6 +199,7 @@ const App: React.FC = () => {
     const [clientPhone, setClientPhone] = useState<string>('');
     const [clientFolder, setClientFolder] = useState<string>('');
     const [downPayment, setDownPayment] = useState<string>('');
+    const [discount, setDiscount] = useState<string>('');
     const [paymentMethod, setPaymentMethod] = useState<string>(paymentOptions[0]);
     const [results, setResults] = useState<CalculationResults | null>(null);
     const [budgetResult, setBudgetResult] = useState<BudgetResult | null>(null);
@@ -261,6 +271,7 @@ const App: React.FC = () => {
                 setClientPhone(settings.clientPhone || '');
                 setClientFolder(settings.clientFolder || '');
                 setDownPayment(settings.downPayment || '');
+                setDiscount(settings.discount || '');
                 setPaymentMethod(settings.paymentMethod || paymentOptions[0]);
             }
         } catch (error) {
@@ -292,6 +303,7 @@ const App: React.FC = () => {
             clientPhone,
             clientFolder,
             downPayment,
+            discount,
             paymentMethod,
         };
 
@@ -303,7 +315,7 @@ const App: React.FC = () => {
     }, [
         objectDimensions, selectedPaperSize, areaDimensions, gap, costPerPage, desiredQuantity,
         extraCost, jobDescription, paperType, colors, finishing, clientName,
-        clientPhone, clientFolder, downPayment, paymentMethod
+        clientPhone, clientFolder, downPayment, discount, paymentMethod
     ]);
 
     // Save budgets to localStorage on change
@@ -352,6 +364,7 @@ const App: React.FC = () => {
     const handleClientNameChange = (e: React.ChangeEvent<HTMLInputElement>) => setClientName(e.target.value);
     const handleClientFolderChange = (e: React.ChangeEvent<HTMLInputElement>) => setClientFolder(e.target.value);
     const handleDownPaymentChange = (e: React.ChangeEvent<HTMLInputElement>) => setDownPayment(e.target.value);
+    const handleDiscountChange = (e: React.ChangeEvent<HTMLInputElement>) => setDiscount(e.target.value);
     const handlePaymentMethodChange = (e: React.ChangeEvent<HTMLSelectElement>) => setPaymentMethod(e.target.value);
 
     const handleClientPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -438,6 +451,7 @@ const App: React.FC = () => {
         const costInCents = toCents(costPerPage);
         const quantity = parseInt(desiredQuantity, 10);
         const extrasInCents = toCents(extraCost);
+        const discountInCents = toCents(discount);
 
         let calculatedBudget: BudgetResult | null = null;
         if (!isNaN(quantity) && quantity > 0) {
@@ -445,13 +459,15 @@ const App: React.FC = () => {
             if (itemsPerPage > 0) {
                 const totalPages = Math.ceil(quantity / itemsPerPage);
                 const subtotalInCents = totalPages * costInCents;
-                const totalCostInCents = subtotalInCents + extrasInCents;
-                
+                const grossTotalInCents = subtotalInCents + extrasInCents;
+                const finalTotalInCents = grossTotalInCents - discountInCents;
+
                 calculatedBudget = { 
                     totalPages, 
                     subtotal: subtotalInCents / 100, 
-                    extraCost: extrasInCents / 100, 
-                    totalCost: totalCostInCents / 100, 
+                    extraCost: extrasInCents / 100,
+                    discount: discountInCents / 100,
+                    totalCost: finalTotalInCents / 100, 
                     itemsPerPage 
                 };
             }
@@ -462,7 +478,7 @@ const App: React.FC = () => {
             id: `hist-${Date.now()}`,
             timestamp: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).replace(',', ''),
             objectDimensions, selectedPaperSize, areaDimensions, costPerPage, desiredQuantity,
-            extraCost, gap, jobDescription, paperType, colors, finishing, clientName,
+            extraCost, discount, gap, jobDescription, paperType, colors, finishing, clientName,
             clientPhone, clientFolder, downPayment, paymentMethod, 
             results: currentResults,
             budgetResult: calculatedBudget
@@ -482,7 +498,7 @@ const App: React.FC = () => {
                         createdAt: budget.createdAt,
                         name: clientName || jobDescription || `Orçamento ${budget.createdAt}`,
                         objectDimensions, selectedPaperSize, areaDimensions, costPerPage, desiredQuantity,
-                        extraCost, gap, jobDescription, paperType, colors, finishing, clientName,
+                        extraCost, discount, gap, jobDescription, paperType, colors, finishing, clientName,
                         clientPhone, clientFolder, downPayment, paymentMethod, results, budgetResult,
                     };
                 }
@@ -500,7 +516,7 @@ const App: React.FC = () => {
             const newBudget: SavedBudget = {
                 id: `budget-${Date.now()}`, name, createdAt: formattedDate, objectDimensions,
                 selectedPaperSize, areaDimensions, costPerPage, desiredQuantity,
-                extraCost, gap, jobDescription, paperType, colors, finishing, clientName,
+                extraCost, discount, gap, jobDescription, paperType, colors, finishing, clientName,
                 clientPhone, clientFolder, downPayment, paymentMethod, results, budgetResult,
             };
 
@@ -518,7 +534,7 @@ const App: React.FC = () => {
         const newBudget: SavedBudget = {
             id: `budget-${Date.now()}`, name, createdAt: formattedDate, objectDimensions,
             selectedPaperSize, areaDimensions, costPerPage, desiredQuantity,
-            extraCost, gap, jobDescription, paperType, colors, finishing, clientName,
+            extraCost, discount, gap, jobDescription, paperType, colors, finishing, clientName,
             clientPhone, clientFolder, downPayment, paymentMethod, results, budgetResult,
         };
 
@@ -547,6 +563,7 @@ const App: React.FC = () => {
         setClientPhone('');
         setClientFolder('');
         setDownPayment('');
+        setDiscount('');
         setPaymentMethod(paymentOptions[0]);
         setResults(null);
         setBudgetResult(null);
@@ -572,6 +589,7 @@ const App: React.FC = () => {
             setCostPerPage(budgetToLoad.costPerPage || '');
             setDesiredQuantity(budgetToLoad.desiredQuantity || '');
             setExtraCost(budgetToLoad.extraCost || '');
+            setDiscount(budgetToLoad.discount || '');
             setGap(budgetToLoad.gap || '');
             setJobDescription(budgetToLoad.jobDescription || '');
             setPaperType(budgetToLoad.paperType || paperTypes[0]);
@@ -603,6 +621,7 @@ const App: React.FC = () => {
             setCostPerPage(historyToLoad.costPerPage || '');
             setDesiredQuantity(historyToLoad.desiredQuantity || '');
             setExtraCost(historyToLoad.extraCost || '');
+            setDiscount(historyToLoad.discount || '');
             setGap(historyToLoad.gap || '');
             setJobDescription(historyToLoad.jobDescription || '');
             setPaperType(historyToLoad.paperType || paperTypes[0]);
@@ -621,6 +640,31 @@ const App: React.FC = () => {
     
     const handleClearHistory = () => {
         setCalculationHistory([]);
+    };
+
+    const handleSelectPreset = (values: PresetValues) => {
+        if (values.jobDescription) setJobDescription(values.jobDescription);
+        if (values.paperType) setPaperType(values.paperType);
+        if (values.objectDimensions) setObjectDimensions(values.objectDimensions);
+        if (values.finishing) setFinishing(values.finishing);
+        if (values.colors) setColors(values.colors);
+
+        if (values.selectedPaperSize) {
+            const sizeKey = values.selectedPaperSize;
+            setSelectedPaperSize(sizeKey);
+            if (paperSizes[sizeKey]) {
+                setAreaDimensions({
+                    width: paperSizes[sizeKey].width,
+                    height: paperSizes[sizeKey].height,
+                });
+            }
+        }
+        
+        // Clear results from previous calculations
+        setResults(null);
+        setBudgetResult(null);
+
+        setToast({ message: `Modelo '${values.jobDescription}' carregado!`, type: 'info' });
     };
     
     const toCents = (val: string | number | undefined): number => {
@@ -666,10 +710,10 @@ const App: React.FC = () => {
                 </div>
                 <header className="text-center mb-8 md:mb-12">
                     <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-slate-50">Orçamento para Impressão</h1>
-                    <p className="mt-2 text-lg text-slate-600 dark:text-slate-400">Otimize o uso do material e calcule os custos de produção.</p>
                 </header>
 
                 <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                    <PresetsMenu onSelectPreset={handleSelectPreset} />
                      <div className="md:col-span-2 bg-white p-6 rounded-xl shadow-md dark:bg-slate-800">
                         <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 mb-6 dark:text-slate-300 dark:border-slate-700">Tamanho ou Formato</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-6 items-end">
@@ -737,8 +781,9 @@ const App: React.FC = () => {
                             <div className="sm:col-span-2"><InputGroup label="Cliente" name="clientName" value={clientName} onChange={handleClientNameChange} placeholder="Nome do Cliente" icon={<UserIcon className="w-5 h-5 text-slate-400" />} type="text" tooltip="Nome do cliente ou empresa para identificação no orçamento." /></div>
                             <InputGroup label="Telefone" name="clientPhone" value={clientPhone} onChange={handleClientPhoneChange} placeholder="(00) 00000-0000" icon={<PhoneIcon className="w-5 h-5 text-slate-400" />} type="tel" tooltip="Telefone de contato do cliente." />
                             <InputGroup label="Pasta" name="clientFolder" value={clientFolder} onChange={handleClientFolderChange} placeholder="Nome da pasta" icon={<FolderIcon className="w-5 h-5 text-slate-400" />} type="text" tooltip="Nome da pasta onde os arquivos do cliente (arte, etc.) estão salvos no computador."/>
+                            <InputGroup label="Desconto (R$)" name="discount" value={discount} onChange={handleDiscountChange} placeholder="ex: 10.00" icon={<DiscountIcon className="w-5 h-5 text-slate-400" />} tooltip="Valor a ser descontado do total do orçamento." />
                             <InputGroup label="Valor de Entrada (R$)" name="downPayment" value={downPayment} onChange={handleDownPaymentChange} placeholder="ex: 100.00" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} tooltip="Valor pago pelo cliente como sinal ou adiantamento." />
-                            <div>
+                            <div className="sm:col-span-2">
                                 <LabelWithTooltip htmlFor="remainingValue" label="Valor Restante" tooltip="Valor restante a ser pago pelo cliente (calculado automaticamente)." className="mb-1" />
                                 <div className="relative rounded-md shadow-sm">
                                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><MoneyIcon className="w-5 h-5 text-slate-400" /></div>

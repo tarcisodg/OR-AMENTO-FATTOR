@@ -13,6 +13,7 @@ interface PrintableOrderProps {
   areaDimensions: { width: number, height: number };
   verticalFit: FitResult;
   horizontalFit: FitResult;
+  finishing: string;
 }
 
 const PrintableOrder: React.FC<PrintableOrderProps> = ({
@@ -25,7 +26,8 @@ const PrintableOrder: React.FC<PrintableOrderProps> = ({
   objectDimensions,
   areaDimensions,
   verticalFit,
-  horizontalFit
+  horizontalFit,
+  finishing,
 }) => {
     
     let orientationText = 'Não aplicável';
@@ -65,6 +67,10 @@ const PrintableOrder: React.FC<PrintableOrderProps> = ({
                     <div>
                         <strong className="font-semibold">Dimensões do Item:</strong>
                         <p className="pl-2">{objectDimensions.width} x {objectDimensions.height} cm</p>
+                    </div>
+                    <div>
+                        <strong className="font-semibold">Acabamento:</strong>
+                        <p className="pl-2">{finishing || 'Nenhum'}</p>
                     </div>
                 </div>
             </section>
