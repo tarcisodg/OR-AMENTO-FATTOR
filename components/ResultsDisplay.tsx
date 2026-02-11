@@ -148,10 +148,7 @@ Tipo de Papel: ${paperType}
 Cores: ${colors}
 Acabamento: ${finishing || 'Não especificado'}
 
-Subtotal: ${(budgetResult?.subtotal ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-Custos Extras: ${(budgetResult?.extraCost ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-${(budgetResult?.discount ?? 0) > 0 ? `Desconto: - ${(budgetResult?.discount ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n` : ''}
-*Valor Total: ${budgetResult?.totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) || 'N/A'}*
+*Valor: ${budgetResult?.totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) || 'N/A'}*
 Forma de Pagamento: ${paymentMethod}
 
 *Observações:*
