@@ -1,5 +1,6 @@
 {
   "name": "APP orçamento grafica",
-  "description": "Uma aplicação para calcular quantos objetos de um determinado tamanho cabem em uma área específica, comparando as orientações vertical e horizontal para determinar o melhor encaixe.",
-  "requestFramePermissions": []
+  "description": "Uma aplicação completa para orçamentos de gráfica rápida, incluindo módulos para encaixe de folhas (corte/sangria) e um novo módulo para comunicação visual (cálculos de banners e adesivos por m²).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

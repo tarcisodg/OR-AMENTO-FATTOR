@@ -5,13 +5,16 @@ interface InputGroupProps {
   name: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   placeholder: string;
   icon: React.ReactElement;
   type?: string;
   tooltip?: string;
+  step?: string;
+  disabled?: boolean;
 }
 
-const InputGroup: React.FC<InputGroupProps> = ({ label, name, value, onChange, placeholder, icon, type = 'number', tooltip }) => {
+const InputGroup: React.FC<InputGroupProps> = ({ label, name, value, onChange, onBlur, placeholder, icon, type = 'number', tooltip, step, disabled }) => {
   return (
     <div>
       <div className="flex items-center gap-1.5 mb-1">
@@ -40,9 +43,16 @@ const InputGroup: React.FC<InputGroupProps> = ({ label, name, value, onChange, p
           id={name}
           value={value}
           onChange={onChange}
-          className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400"
+          onBlur={onBlur}
+          disabled={disabled}
+          className={`block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:border-slate-600 dark:placeholder-slate-400 ${
+            disabled 
+              ? 'bg-slate-100 text-slate-500 cursor-not-allowed dark:bg-slate-700/50 dark:text-slate-400' 
+              : 'dark:bg-slate-700 dark:text-slate-200'
+          }`}
           placeholder={placeholder}
           min={type === 'number' ? "0" : undefined}
+          step={step}
         />
       </div>
     </div>

@@ -29,6 +29,7 @@ export interface SavedBudget {
   id: string;
   name: string;
   createdAt: string;
+  budgetType?: 'encaixe' | 'banner_adesivo';
   objectDimensions: Dimensions;
   selectedPaperSize: string;
   areaDimensions: Dimensions;
@@ -53,6 +54,7 @@ export interface SavedBudget {
 export interface CalculationHistoryItem {
   id: string;
   timestamp: string;
+  budgetType?: 'encaixe' | 'banner_adesivo';
   objectDimensions: Dimensions;
   selectedPaperSize: string;
   areaDimensions: Dimensions;

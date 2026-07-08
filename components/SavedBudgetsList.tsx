@@ -26,10 +26,21 @@ const SavedBudgetsList: React.FC<SavedBudgetsListProps> = ({ budgets, onLoad, on
         {budgets.length > 0 ? (
             <ul className="space-y-4 max-h-[28rem] overflow-y-auto pr-2 -mr-2">
                 {budgets.map((budget) => (
-                    <li key={budget.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200 hover:shadow-sm transition-shadow dark:bg-slate-700/50 dark:border-slate-700">
-                        <div>
-                            <p className="font-semibold text-slate-800 dark:text-slate-200">{budget.name}</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Salvo em: {budget.createdAt}</p>
+                    <li key={budget.id} className="flex items-start sm:items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200 hover:shadow-sm transition-shadow dark:bg-slate-700/50 dark:border-slate-700 gap-4">
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">{budget.name}</p>
+                                {budget.budgetType === 'banner_adesivo' ? (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50 select-none">
+                                        M² (Com. Visual)
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-sky-100 text-sky-800 dark:bg-sky-950/40 dark:text-sky-300 border border-sky-200 dark:border-sky-800/50 select-none">
+                                        Encaixe de Folhas
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Salvo em: {budget.createdAt}</p>
                         </div>
                         <div className="flex items-center gap-2">
                             <button 

@@ -7,7 +7,7 @@ import SavedBudgetsList from './components/SavedBudgetsList';
 import CalculationHistory from './components/HistoryLog';
 import Toast from './components/Toast';
 import ThemeToggle from './components/ThemeToggle';
-import PresetsMenu from './components/PresetsMenu';
+import { BannerAdesivoModule } from './components/BannerAdesivoModule';
 
 const WidthIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -207,7 +207,14 @@ const App: React.FC = () => {
     const [calculationHistory, setCalculationHistory] = useState<CalculationHistoryItem[]>([]);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
     const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
+    const [activeModule, setActiveModule] = useState<'encaixe' | 'banner_adesivo'>('encaixe');
+    const [isMac, setIsMac] = useState(false);
 
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setIsMac(/Mac|iPhone|iPod|iPad/i.test(navigator.userAgent));
+        }
+    }, []);
 
     const isInitialMount = useRef(true);
 
@@ -544,6 +551,35 @@ const App: React.FC = () => {
         setEditingBudgetId(null);
     };
 
+    const handleSaveBannerBudget = (budget: SavedBudget) => {
+        if (editingBudgetId) {
+            // Update existing banner budget
+            const updatedBudgets = savedBudgets.map(b => {
+                if (b.id === editingBudgetId) {
+                    return {
+                        ...budget,
+                        id: b.id,
+                        createdAt: b.createdAt
+                    };
+                }
+                return b;
+            });
+            setSavedBudgets(updatedBudgets);
+            setToast({ message: 'Orçamento de Banner/Adesivo atualizado com sucesso!', type: 'success' });
+            setEditingBudgetId(null);
+        } else {
+            // Create new budget
+            const updatedBudgets = [...savedBudgets, budget];
+            setSavedBudgets(updatedBudgets);
+            setToast({ message: 'Orçamento de Banner/Adesivo salvo com sucesso!', type: 'success' });
+        }
+    };
+
+    const handleAddBannerHistory = (historyItem: CalculationHistoryItem) => {
+        const updatedHistory = [historyItem, ...calculationHistory].slice(0, 50);
+        setCalculationHistory(updatedHistory);
+    };
+
     const resetForm = () => {
         setObjectDimensions({ width: '', height: '' });
         setSelectedPaperSize('SRA3_CORTE');
@@ -583,58 +619,78 @@ const App: React.FC = () => {
     const handleLoadBudget = (budgetId: string) => {
         const budgetToLoad = savedBudgets.find(b => b.id === budgetId);
         if (budgetToLoad) {
-            setObjectDimensions(budgetToLoad.objectDimensions || { width: '', height: '' });
-            setSelectedPaperSize(budgetToLoad.selectedPaperSize || 'SRA3_CORTE');
-            setAreaDimensions(budgetToLoad.areaDimensions || paperSizes['SRA3_CORTE']);
-            setCostPerPage(budgetToLoad.costPerPage || '');
-            setDesiredQuantity(budgetToLoad.desiredQuantity || '');
-            setExtraCost(budgetToLoad.extraCost || '');
-            setDiscount(budgetToLoad.discount || '');
-            setGap(budgetToLoad.gap || '');
-            setJobDescription(budgetToLoad.jobDescription || '');
-            setPaperType(budgetToLoad.paperType || paperTypes[0]);
-            setColors(budgetToLoad.colors || colorOptions[0]);
-            setFinishing(budgetToLoad.finishing || finishingOptions[0]);
-            setClientName(budgetToLoad.clientName || '');
-            setClientPhone(budgetToLoad.clientPhone || '');
-            setClientFolder(budgetToLoad.clientFolder || '');
-            setDownPayment(budgetToLoad.downPayment || '');
-            setPaymentMethod(budgetToLoad.paymentMethod || paymentOptions[0]);
-            setResults(budgetToLoad.results || null);
-            setBudgetResult(budgetToLoad.budgetResult || null);
-            setEditingBudgetId(budgetId);
-            setToast({ message: 'Orçamento carregado para edição!', type: 'info' });
+            const isBanner = budgetToLoad.budgetType === 'banner_adesivo';
+            setActiveModule(isBanner ? 'banner_adesivo' : 'encaixe');
+            
+            if (isBanner) {
+                setEditingBudgetId(budgetId);
+                setToast({ message: 'Orçamento de Banner/Adesivo carregado para edição!', type: 'info' });
+            } else {
+                setObjectDimensions(budgetToLoad.objectDimensions || { width: '', height: '' });
+                setSelectedPaperSize(budgetToLoad.selectedPaperSize || 'SRA3_CORTE');
+                setAreaDimensions(budgetToLoad.areaDimensions || paperSizes['SRA3_CORTE']);
+                setCostPerPage(budgetToLoad.costPerPage || '');
+                setDesiredQuantity(budgetToLoad.desiredQuantity || '');
+                setExtraCost(budgetToLoad.extraCost || '');
+                setDiscount(budgetToLoad.discount || '');
+                setGap(budgetToLoad.gap || '');
+                setJobDescription(budgetToLoad.jobDescription || '');
+                setPaperType(budgetToLoad.paperType || paperTypes[0]);
+                setColors(budgetToLoad.colors || colorOptions[0]);
+                setFinishing(budgetToLoad.finishing || finishingOptions[0]);
+                setClientName(budgetToLoad.clientName || '');
+                setClientPhone(budgetToLoad.clientPhone || '');
+                setClientFolder(budgetToLoad.clientFolder || '');
+                setDownPayment(budgetToLoad.downPayment || '');
+                setPaymentMethod(budgetToLoad.paymentMethod || paymentOptions[0]);
+                setResults(budgetToLoad.results || null);
+                setBudgetResult(budgetToLoad.budgetResult || null);
+                setEditingBudgetId(budgetId);
+                setToast({ message: 'Orçamento carregado para edição!', type: 'info' });
+            }
         }
     };
 
     const handleDeleteBudget = (budgetId: string) => {
         const updatedBudgets = savedBudgets.filter(b => b.id !== budgetId);
         setSavedBudgets(updatedBudgets);
+        if (editingBudgetId === budgetId) {
+            setEditingBudgetId(null);
+        }
     };
 
     const handleLoadHistory = (historyId: string) => {
         const historyToLoad = calculationHistory.find(h => h.id === historyId);
         if (historyToLoad) {
-            setObjectDimensions(historyToLoad.objectDimensions || { width: '', height: '' });
-            setSelectedPaperSize(historyToLoad.selectedPaperSize || 'SRA3_CORTE');
-            setAreaDimensions(historyToLoad.areaDimensions || paperSizes['SRA3_CORTE']);
-            setCostPerPage(historyToLoad.costPerPage || '');
-            setDesiredQuantity(historyToLoad.desiredQuantity || '');
-            setExtraCost(historyToLoad.extraCost || '');
-            setDiscount(historyToLoad.discount || '');
-            setGap(historyToLoad.gap || '');
-            setJobDescription(historyToLoad.jobDescription || '');
-            setPaperType(historyToLoad.paperType || paperTypes[0]);
-            setColors(historyToLoad.colors || colorOptions[0]);
-            setFinishing(historyToLoad.finishing || finishingOptions[0]);
-            setClientName(historyToLoad.clientName || '');
-            setClientPhone(historyToLoad.clientPhone || '');
-            setClientFolder(historyToLoad.clientFolder || '');
-            setDownPayment(historyToLoad.downPayment || '');
-            setPaymentMethod(historyToLoad.paymentMethod || paymentOptions[0]);
-            setResults(historyToLoad.results || null);
-            setBudgetResult(historyToLoad.budgetResult || null);
-            setToast({ message: 'Cálculo do histórico carregado!', type: 'info' });
+            const isBanner = historyToLoad.budgetType === 'banner_adesivo';
+            setActiveModule(isBanner ? 'banner_adesivo' : 'encaixe');
+            
+            if (isBanner) {
+                setEditingBudgetId(historyId); // set editing so it loads in Banner module
+                setToast({ message: 'Histórico de Banner/Adesivo carregado!', type: 'info' });
+            } else {
+                setObjectDimensions(historyToLoad.objectDimensions || { width: '', height: '' });
+                setSelectedPaperSize(historyToLoad.selectedPaperSize || 'SRA3_CORTE');
+                setAreaDimensions(historyToLoad.areaDimensions || paperSizes['SRA3_CORTE']);
+                setCostPerPage(historyToLoad.costPerPage || '');
+                setDesiredQuantity(historyToLoad.desiredQuantity || '');
+                setExtraCost(historyToLoad.extraCost || '');
+                setDiscount(historyToLoad.discount || '');
+                setGap(historyToLoad.gap || '');
+                setJobDescription(historyToLoad.jobDescription || '');
+                setPaperType(historyToLoad.paperType || paperTypes[0]);
+                setColors(historyToLoad.colors || colorOptions[0]);
+                setFinishing(historyToLoad.finishing || finishingOptions[0]);
+                setClientName(historyToLoad.clientName || '');
+                setClientPhone(historyToLoad.clientPhone || '');
+                setClientFolder(historyToLoad.clientFolder || '');
+                setDownPayment(historyToLoad.downPayment || '');
+                setPaymentMethod(historyToLoad.paymentMethod || paymentOptions[0]);
+                setResults(historyToLoad.results || null);
+                setBudgetResult(historyToLoad.budgetResult || null);
+                setEditingBudgetId(null);
+                setToast({ message: 'Cálculo do histórico carregado!', type: 'info' });
+            }
         }
     };
     
@@ -678,6 +734,36 @@ const App: React.FC = () => {
     const remainingInCents = totalCostInCents > 0 ? totalCostInCents - downPaymentInCents : 0;
     const remainingValue = remainingInCents / 100;
 
+    const calculateRef = useRef(handleCalculate);
+    const saveBudgetRef = useRef(handleSaveBudget);
+
+    useEffect(() => {
+        calculateRef.current = handleCalculate;
+        saveBudgetRef.current = handleSaveBudget;
+    });
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (activeModule === 'banner_adesivo') return;
+            const isModKey = e.ctrlKey || e.metaKey;
+            
+            if (isModKey && e.key === 'Enter') {
+                e.preventDefault();
+                calculateRef.current();
+            }
+            
+            if (isModKey && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                saveBudgetRef.current();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [activeModule]);
+
     const LabelWithTooltip: React.FC<{ htmlFor: string; label: string; tooltip: string; className?: string }> = ({ htmlFor, label, tooltip, className }) => (
         <div className={`flex items-center gap-1.5 ${className}`}>
             <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -709,151 +795,200 @@ const App: React.FC = () => {
                     <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
                 </div>
                 <header className="text-center mb-8 md:mb-12">
-                    <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-slate-50">Orçamento para Impressão</h1>
+                    <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-slate-50">Fattorprint - Orçamentos</h1>
                 </header>
 
-                <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                    <PresetsMenu onSelectPreset={handleSelectPreset} />
-                     <div className="md:col-span-2 bg-white p-6 rounded-xl shadow-md dark:bg-slate-800">
-                        <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 mb-6 dark:text-slate-300 dark:border-slate-700">Tamanho ou Formato</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-6 items-end">
-                            <InputGroup label="Largura do Objeto (cm)" name="width" value={objectDimensions.width} onChange={handleObjectChange} placeholder="ex: 10" icon={<WidthIcon className="w-5 h-5 text-slate-400" />} tooltip="Insira a largura do item individual em centímetros. Use vírgula ou ponto para decimais. Ex: 10,5" />
-                            <InputGroup label="Altura do Objeto (cm)" name="height" value={objectDimensions.height} onChange={handleObjectChange} placeholder="ex: 5" icon={<HeightIcon className="w-5 h-5 text-slate-400" />} tooltip="Insira a altura do item individual em centímetros. Use vírgula ou ponto para decimais. Ex: 5,0" />
-                            <InputGroup label="Sangria / Espaço (cm)" name="gap" value={gap} onChange={handleGapChange} placeholder="ex: 0.3" icon={<GapIcon className="w-5 h-5 text-slate-400" />} tooltip="Insira o espaçamento entre os itens em centímetros. Essencial para o corte. Ex: 0.3" />
-                            <div>
-                                <LabelWithTooltip htmlFor="paper-size" label="Tamanho do Papel" tooltip="Selecione o formato do papel a ser usado para a impressão. As medidas são exibidas em centímetros." className="mb-1" />
-                                <div className="relative rounded-md shadow-sm">
-                                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><PaperIcon className="w-5 h-5 text-slate-400" /></div>
-                                    <select id="paper-size" name="paper-size" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={selectedPaperSize} onChange={handlePaperSizeChange}>
-                                        {Object.entries(paperSizes).map(([key, { name }]) => (<option key={key} value={key}>{name}</option>))}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div className="bg-white p-6 rounded-xl shadow-md space-y-6 dark:bg-slate-800">
-                        <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 dark:text-slate-300 dark:border-slate-700">Orçamento e Detalhes do Trabalho</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <InputGroup label="Custo por Página (R$)" name="cost" value={costPerPage} onChange={handleCostChange} placeholder="ex: 2.50" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} tooltip="Insira o custo de impressão de uma única página. Este valor será multiplicado pelo número de páginas necessárias." />
-                            <InputGroup label="Quantidade Desejada" name="quantity" value={desiredQuantity} onChange={handleQuantityChange} placeholder="ex: 1000" icon={<QuantityIcon className="w-5 h-5 text-slate-400" />} tooltip="Insira o número total de itens que deseja produzir. Ex: 1000 cartões." />
-                            <InputGroup label="Custo Extra" name="extra" value={extraCost} onChange={handleExtraCostChange} placeholder="ex: 50.00" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} tooltip="Adicione custos adicionais como laminação, corte especial, arte, etc." />
-                            <div>
-                                <LabelWithTooltip htmlFor="colors" label="Cores" tooltip="Selecione a configuração de cores da impressão (ex: 4x0 = colorido frente, verso em branco)." className="mb-1" />
-                                <div className="relative rounded-md shadow-sm">
-                                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><ColorsIcon className="w-5 h-5 text-slate-400" /></div>
-                                    <select id="colors" name="colors" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={colors} onChange={handleColorsChange}>
-                                        {colorOptions.map((option) => (<option key={option} value={option}>{option}</option>))}
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="sm:col-span-2">
-                                <LabelWithTooltip htmlFor="paper-type" label="Tipo de Papel" tooltip="Escolha o tipo e a gramatura do papel." className="mb-1" />
-                                <div className="relative rounded-md shadow-sm">
-                                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><PaperIcon className="w-5 h-5 text-slate-400" /></div>
-                                    <select id="paper-type" name="paper-type" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={paperType} onChange={handlePaperTypeChange}>
-                                        {paperTypes.map((type) => (<option key={type} value={type}>{type}</option>))}
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="sm:col-span-2">
-                                <LabelWithTooltip htmlFor="finishing" label="Acabamento" tooltip="Selecione o tipo de acabamento final para o produto." className="mb-1" />
-                                <div className="relative rounded-md shadow-sm">
-                                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><FinishingIcon className="w-5 h-5 text-slate-400" /></div>
-                                    <select id="finishing" name="finishing" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={finishing} onChange={handleFinishingChange}>
-                                        {finishingOptions.map((option) => (<option key={option} value={option}>{option}</option>))}
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="sm:col-span-2">
-                                <LabelWithTooltip htmlFor="job-description" label="Descrição do Trabalho" tooltip="Descreva o trabalho a ser feito. Ex: Cartões de visita para a Loja X. Esta informação será usada nos orçamentos." className="mb-1" />
-                                <div className="relative rounded-md shadow-sm">
-                                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 pt-2"><DescriptionIcon className="w-5 h-5 text-slate-400" /></div>
-                                    <textarea id="job-description" name="job-description" rows={3} className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400" placeholder="Ex: Cartões de visita, adesivos..." value={jobDescription} onChange={handleJobDescriptionChange} />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div className="bg-white p-6 rounded-xl shadow-md space-y-6 dark:bg-slate-800">
-                        <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 dark:text-slate-300 dark:border-slate-700">Dados do Cliente</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <div className="sm:col-span-2"><InputGroup label="Cliente" name="clientName" value={clientName} onChange={handleClientNameChange} placeholder="Nome do Cliente" icon={<UserIcon className="w-5 h-5 text-slate-400" />} type="text" tooltip="Nome do cliente ou empresa para identificação no orçamento." /></div>
-                            <InputGroup label="Telefone" name="clientPhone" value={clientPhone} onChange={handleClientPhoneChange} placeholder="(00) 00000-0000" icon={<PhoneIcon className="w-5 h-5 text-slate-400" />} type="tel" tooltip="Telefone de contato do cliente." />
-                            <InputGroup label="Pasta" name="clientFolder" value={clientFolder} onChange={handleClientFolderChange} placeholder="Nome da pasta" icon={<FolderIcon className="w-5 h-5 text-slate-400" />} type="text" tooltip="Nome da pasta onde os arquivos do cliente (arte, etc.) estão salvos no computador."/>
-                            <InputGroup label="Desconto (R$)" name="discount" value={discount} onChange={handleDiscountChange} placeholder="ex: 10.00" icon={<DiscountIcon className="w-5 h-5 text-slate-400" />} tooltip="Valor a ser descontado do total do orçamento." />
-                            <InputGroup label="Valor de Entrada (R$)" name="downPayment" value={downPayment} onChange={handleDownPaymentChange} placeholder="ex: 100.00" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} tooltip="Valor pago pelo cliente como sinal ou adiantamento." />
-                            <div className="sm:col-span-2">
-                                <LabelWithTooltip htmlFor="remainingValue" label="Valor Restante" tooltip="Valor restante a ser pago pelo cliente (calculado automaticamente)." className="mb-1" />
-                                <div className="relative rounded-md shadow-sm">
-                                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><MoneyIcon className="w-5 h-5 text-slate-400" /></div>
-                                    <input type="text" name="remainingValue" id="remainingValue" value={remainingValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} className="block w-full rounded-md border-slate-300 pl-10 py-2 bg-slate-100 text-slate-500 cursor-not-allowed sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-400" disabled />
-                                </div>
-                            </div>
-                            <div className="sm:col-span-2">
-                                <LabelWithTooltip htmlFor="payment-method" label="Pagamento" tooltip="Forma de pagamento escolhida pelo cliente." className="mb-1" />
-                                <div className="relative rounded-md shadow-sm">
-                                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><CreditCardIcon className="w-5 h-5 text-slate-400" /></div>
-                                    <select id="payment-method" name="payment-method" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={paymentMethod} onChange={handlePaymentMethodChange}>
-                                        {paymentOptions.map((option) => (<option key={option} value={option}>{option}</option>))}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                {/* Module switcher tabs */}
+                <div className="max-w-4xl mx-auto mb-8 flex justify-center p-1 bg-slate-200/60 dark:bg-slate-800/80 rounded-xl border border-slate-300/30">
+                    <button 
+                        onClick={() => {
+                            setActiveModule('encaixe');
+                            setEditingBudgetId(null);
+                        }} 
+                        className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 ${activeModule === 'encaixe' ? 'bg-sky-600 text-white shadow' : 'text-slate-600 hover:text-slate-800 hover:bg-slate-300/40 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700/40'}`}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                        </svg>
+                        <span>Corte / Encaixe de Folhas</span>
+                    </button>
+                    <button 
+                        onClick={() => {
+                            setActiveModule('banner_adesivo');
+                            setEditingBudgetId(null);
+                        }} 
+                        className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 ${activeModule === 'banner_adesivo' ? 'bg-sky-600 text-white shadow' : 'text-slate-600 hover:text-slate-800 hover:bg-slate-300/40 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700/40'}`}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>Banners e Adesivos (M²)</span>
+                    </button>
                 </div>
 
-                <div className="mt-8 flex justify-center gap-4 flex-wrap">
-                    <button onClick={handleCalculate} className="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-all duration-300 text-lg active:scale-[0.98] active:brightness-95">
-                        Calcular
-                    </button>
-                    {editingBudgetId ? (
-                        <>
-                            <button onClick={handleSaveBudget} className="bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Atualizar o orçamento existente">
-                                <UpdateIcon className="w-5 h-5" />
-                                Atualizar Orçamento
+                {activeModule === 'encaixe' ? (
+                    <>
+                        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                             <div className="md:col-span-2 bg-white p-6 rounded-xl shadow-md dark:bg-slate-800">
+                                <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 mb-6 dark:text-slate-300 dark:border-slate-700">Tamanho ou Formato</h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-6 items-end">
+                                    <InputGroup label="Largura do Objeto (cm)" name="width" value={objectDimensions.width} onChange={handleObjectChange} placeholder="ex: 10" icon={<WidthIcon className="w-5 h-5 text-slate-400" />} tooltip="Insira a largura do item individual em centímetros. Use vírgula ou ponto para decimais. Ex: 10,5" />
+                                    <InputGroup label="Altura do Objeto (cm)" name="height" value={objectDimensions.height} onChange={handleObjectChange} placeholder="ex: 5" icon={<HeightIcon className="w-5 h-5 text-slate-400" />} tooltip="Insira a altura do item individual em centímetros. Use vírgula ou ponto para decimais. Ex: 5,0" />
+                                    <InputGroup label="Sangria / Espaço (cm)" name="gap" value={gap} onChange={handleGapChange} placeholder="ex: 0.3" icon={<GapIcon className="w-5 h-5 text-slate-400" />} tooltip="Insira o espaçamento entre os itens em centímetros. Essencial para o corte. Ex: 0.3" />
+                                    <div>
+                                        <LabelWithTooltip htmlFor="paper-size" label="Tamanho do Papel" tooltip="Selecione o formato do papel a ser usado para a impressão. As medidas são exibidas em centímetros." className="mb-1" />
+                                        <div className="relative rounded-md shadow-sm">
+                                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><PaperIcon className="w-5 h-5 text-slate-400" /></div>
+                                            <select id="paper-size" name="paper-size" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={selectedPaperSize} onChange={handlePaperSizeChange}>
+                                                {Object.entries(paperSizes).map(([key, { name }]) => (<option key={key} value={key}>{name}</option>))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-white p-6 rounded-xl shadow-md space-y-6 dark:bg-slate-800">
+                                <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 dark:text-slate-300 dark:border-slate-700">Orçamento e Detalhes do Trabalho</h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <InputGroup label="Custo por Página (R$)" name="cost" value={costPerPage} onChange={handleCostChange} placeholder="ex: 2.50" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} tooltip="Insira o custo de impressão de uma única página. Este valor será multiplicado pelo número de páginas necessárias." />
+                                    <InputGroup label="Quantidade Desejada" name="quantity" value={desiredQuantity} onChange={handleQuantityChange} placeholder="ex: 1000" icon={<QuantityIcon className="w-5 h-5 text-slate-400" />} tooltip="Insira o número total de itens que deseja produzir. Ex: 1000 cartões." />
+                                    <InputGroup label="Custo Extra" name="extra" value={extraCost} onChange={handleExtraCostChange} placeholder="ex: 50.00" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} tooltip="Adicione custos adicionais como laminação, corte especial, arte, etc." />
+                                    <div>
+                                        <LabelWithTooltip htmlFor="colors" label="Cores" tooltip="Selecione a configuração de cores da impressão (ex: 4x0 = colorido frente, verso em branco)." className="mb-1" />
+                                        <div className="relative rounded-md shadow-sm">
+                                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><ColorsIcon className="w-5 h-5 text-slate-400" /></div>
+                                            <select id="colors" name="colors" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={colors} onChange={handleColorsChange}>
+                                                {colorOptions.map((option) => (<option key={option} value={option}>{option}</option>))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <LabelWithTooltip htmlFor="paper-type" label="Tipo de Papel" tooltip="Escolha o tipo e a gramatura do papel." className="mb-1" />
+                                        <div className="relative rounded-md shadow-sm">
+                                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><PaperIcon className="w-5 h-5 text-slate-400" /></div>
+                                            <select id="paper-type" name="paper-type" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={paperType} onChange={handlePaperTypeChange}>
+                                                {paperTypes.map((type) => (<option key={type} value={type}>{type}</option>))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <LabelWithTooltip htmlFor="finishing" label="Acabamento" tooltip="Selecione o tipo de acabamento final para o produto." className="mb-1" />
+                                        <div className="relative rounded-md shadow-sm">
+                                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><FinishingIcon className="w-5 h-5 text-slate-400" /></div>
+                                            <select id="finishing" name="finishing" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={finishing} onChange={handleFinishingChange}>
+                                                {finishingOptions.map((option) => (<option key={option} value={option}>{option}</option>))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <LabelWithTooltip htmlFor="job-description" label="Descrição do Trabalho" tooltip="Descreva o trabalho a ser feito. Ex: Cartões de visita para a Loja X. Esta informação será usada nos orçamentos." className="mb-1" />
+                                        <div className="relative rounded-md shadow-sm">
+                                             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 pt-2"><DescriptionIcon className="w-5 h-5 text-slate-400" /></div>
+                                            <textarea id="job-description" name="job-description" rows={3} className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400" placeholder="Ex: Cartões de visita, adesivos..." value={jobDescription} onChange={handleJobDescriptionChange} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-white p-6 rounded-xl shadow-md space-y-6 dark:bg-slate-800">
+                                <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 dark:text-slate-300 dark:border-slate-700">Dados do Cliente</h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <div className="sm:col-span-2"><InputGroup label="Cliente" name="clientName" value={clientName} onChange={handleClientNameChange} placeholder="Nome do Cliente" icon={<UserIcon className="w-5 h-5 text-slate-400" />} type="text" tooltip="Nome do cliente ou empresa para identificação no orçamento." /></div>
+                                    <InputGroup label="Telefone" name="clientPhone" value={clientPhone} onChange={handleClientPhoneChange} placeholder="(00) 00000-0000" icon={<PhoneIcon className="w-5 h-5 text-slate-400" />} type="tel" tooltip="Telefone de contato do cliente." />
+                                    <InputGroup label="Pasta" name="clientFolder" value={clientFolder} onChange={handleClientFolderChange} placeholder="Nome da pasta" icon={<FolderIcon className="w-5 h-5 text-slate-400" />} type="text" tooltip="Nome da pasta onde os arquivos do cliente (arte, etc.) estão salvos no computador."/>
+                                    <InputGroup label="Desconto (R$)" name="discount" value={discount} onChange={handleDiscountChange} placeholder="ex: 10.00" icon={<DiscountIcon className="w-5 h-5 text-slate-400" />} tooltip="Valor a ser descontado do total do orçamento." />
+                                    <InputGroup label="Valor de Entrada (R$)" name="downPayment" value={downPayment} onChange={handleDownPaymentChange} placeholder="ex: 100.00" icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} tooltip="Valor pago pelo cliente como sinal ou adiantamento." />
+                                    <div className="sm:col-span-2">
+                                        <LabelWithTooltip htmlFor="remainingValue" label="Valor Restante" tooltip="Valor restante a ser pago pelo cliente (calculado automaticamente)." className="mb-1" />
+                                        <div className="relative rounded-md shadow-sm">
+                                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><MoneyIcon className="w-5 h-5 text-slate-400" /></div>
+                                            <input type="text" name="remainingValue" id="remainingValue" value={remainingValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} className="block w-full rounded-md border-slate-300 pl-10 py-2 bg-slate-100 text-slate-500 cursor-not-allowed sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-400" disabled />
+                                        </div>
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <LabelWithTooltip htmlFor="payment-method" label="Pagamento" tooltip="Forma de pagamento escolhida pelo cliente." className="mb-1" />
+                                        <div className="relative rounded-md shadow-sm">
+                                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><CreditCardIcon className="w-5 h-5 text-slate-400" /></div>
+                                            <select id="payment-method" name="payment-method" className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" value={paymentMethod} onChange={handlePaymentMethodChange}>
+                                                {paymentOptions.map((option) => (<option key={option} value={option}>{option}</option>))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-8 flex justify-center gap-4 flex-wrap">
+                            <button onClick={handleCalculate} className="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-all duration-300 text-lg active:scale-[0.98] active:brightness-95 flex items-center gap-2">
+                                <span>Calcular</span>
+                                <kbd className="hidden sm:inline-block text-[10px] uppercase font-semibold tracking-wider bg-sky-700 text-sky-100 px-1.5 py-0.5 rounded opacity-90 border border-sky-500 font-mono select-none">
+                                    {isMac ? '⌘↵' : 'Ctrl+Enter'}
+                                </kbd>
                             </button>
-                             <button onClick={handleSaveAsNew} className="bg-sky-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Salvar as alterações como um novo orçamento">
-                                <SaveAsNewIcon className="w-5 h-5" />
-                                Salvar como Novo
-                            </button>
-                            <button onClick={handleCancelEdit} className="bg-slate-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Cancelar a edição e limpar o formulário">
-                                <CancelIcon className="w-5 h-5" />
-                                Cancelar
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            <button onClick={handleSaveBudget} className="bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Salvar os dados atuais como um novo orçamento">
-                                <SaveIcon className="w-5 h-5" />
-                                Salvar Orçamento
-                            </button>
-                            <button onClick={handleClearForm} className="bg-slate-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Limpar todos os campos do formulário">
-                                <ClearIcon className="w-5 h-5" />
-                                Limpar
-                            </button>
-                        </>
-                    )}
-                </div>
-                
-                {results && (
-                    <ResultsDisplay 
-                        results={results} 
-                        budgetResult={budgetResult}
-                        jobDescription={jobDescription}
-                        paperType={paperType}
-                        objectDimensions={{width: parseFloat(objectDimensions.width) || 0, height: parseFloat(objectDimensions.height) || 0}}
-                        areaDimensions={{width: parseFloat(areaDimensions.width) || 0, height: parseFloat(areaDimensions.height) || 0}}
-                        gap={parseFloat(gap) || 0}
-                        desiredQuantity={desiredQuantity}
-                        colors={colors}
-                        finishing={finishing}
-                        clientName={clientName}
-                        clientPhone={clientPhone}
-                        clientFolder={clientFolder}
-                        paymentMethod={paymentMethod}
-                        downPayment={downPayment}
-                        remainingValue={remainingValue}
+                            {editingBudgetId ? (
+                                <>
+                                    <button onClick={handleSaveBudget} className="bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Atualizar o orçamento existente">
+                                        <UpdateIcon className="w-5 h-5" />
+                                        <span>Atualizar Orçamento</span>
+                                        <kbd className="hidden sm:inline-block text-[10px] uppercase font-semibold tracking-wider bg-green-700 text-green-100 px-1.5 py-0.5 rounded opacity-90 border border-green-500 font-mono select-none">
+                                            {isMac ? '⌘S' : 'Ctrl+S'}
+                                        </kbd>
+                                    </button>
+                                     <button onClick={handleSaveAsNew} className="bg-sky-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Salvar as alterações como um novo orçamento">
+                                        <SaveAsNewIcon className="w-5 h-5" />
+                                        <span>Salvar como Novo</span>
+                                    </button>
+                                    <button onClick={handleCancelEdit} className="bg-slate-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Cancelar a edição e limpar o formulário">
+                                        <CancelIcon className="w-5 h-5" />
+                                        <span>Cancelar</span>
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <button onClick={handleSaveBudget} className="bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Salvar os dados atuais como um novo orçamento">
+                                        <SaveIcon className="w-5 h-5" />
+                                        <span>Salvar Orçamento</span>
+                                        <kbd className="hidden sm:inline-block text-[10px] uppercase font-semibold tracking-wider bg-green-700 text-green-100 px-1.5 py-0.5 rounded opacity-90 border border-green-500 font-mono select-none">
+                                            {isMac ? '⌘S' : 'Ctrl+S'}
+                                        </kbd>
+                                    </button>
+                                    <button onClick={handleClearForm} className="bg-slate-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95" title="Limpar todos os campos do formulário">
+                                        <ClearIcon className="w-5 h-5" />
+                                        <span>Limpar</span>
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                        
+                        {results && (
+                            <ResultsDisplay 
+                                results={results} 
+                                budgetResult={budgetResult}
+                                jobDescription={jobDescription}
+                                paperType={paperType}
+                                objectDimensions={{width: parseFloat(objectDimensions.width) || 0, height: parseFloat(objectDimensions.height) || 0}}
+                                areaDimensions={{width: parseFloat(areaDimensions.width) || 0, height: parseFloat(areaDimensions.height) || 0}}
+                                gap={parseFloat(gap) || 0}
+                                desiredQuantity={desiredQuantity}
+                                colors={colors}
+                                finishing={finishing}
+                                clientName={clientName}
+                                clientPhone={clientPhone}
+                                clientFolder={clientFolder}
+                                paymentMethod={paymentMethod}
+                                downPayment={downPayment}
+                                remainingValue={remainingValue}
+                            />
+                        )}
+                    </>
+                ) : (
+                    <BannerAdesivoModule 
+                        editingBudget={editingBudgetId ? (savedBudgets.find(b => b.id === editingBudgetId) || calculationHistory.find(h => h.id === editingBudgetId) as unknown as SavedBudget || null) : null}
+                        onSaveBudget={handleSaveBannerBudget}
+                        onAddHistory={handleAddBannerHistory}
+                        onCancelEdit={handleCancelEdit}
+                        setToast={setToast}
+                        isMac={isMac}
                     />
                 )}
                 
