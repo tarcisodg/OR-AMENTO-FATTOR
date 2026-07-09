@@ -839,16 +839,18 @@ ${results && results.downPayment > 0 ? `Sinal/Entrada: ${formattedDown}\nValor R
               label="Preço por M² (R$)" 
               name="costPerM2" 
               value={costPerM2} 
+              type="text"
               onChange={(e) => setCostPerM2(e.target.value)} 
               onBlur={() => formatPriceOnBlur(costPerM2, setCostPerM2)}
               placeholder="90,00" 
               icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} 
-              tooltip="Valor fixado em R$ 90,00 por metro quadrado impresso." 
+              tooltip="Mude o valor do metro quadrado como desejar para este produto." 
             />
             <InputGroup 
               label="Quantidade Desejada" 
               name="desiredQuantity" 
               value={desiredQuantity} 
+              type="text"
               onChange={(e) => setDesiredQuantity(e.target.value)} 
               placeholder="ex: 1" 
               icon={<QuantityIcon className="w-5 h-5 text-slate-400" />} 
@@ -858,8 +860,10 @@ ${results && results.downPayment > 0 ? `Sinal/Entrada: ${formattedDown}\nValor R
               label="Custo Adicional (R$)" 
               name="extraCost" 
               value={extraCost} 
+              type="text"
               onChange={(e) => setExtraCost(e.target.value)} 
-              placeholder="ex: 20.00" 
+              onBlur={() => formatPriceOnBlur(extraCost, setExtraCost)}
+              placeholder="ex: 20,00" 
               icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} 
               tooltip="Custos adicionais como arte, deslocamento ou suporte." 
             />
@@ -944,8 +948,10 @@ ${results && results.downPayment > 0 ? `Sinal/Entrada: ${formattedDown}\nValor R
               label="Desconto (R$)" 
               name="discount" 
               value={discount} 
+              type="text"
               onChange={(e) => setDiscount(e.target.value)} 
-              placeholder="ex: 15.00" 
+              onBlur={() => formatPriceOnBlur(discount, setDiscount)}
+              placeholder="ex: 15,00" 
               icon={<DiscountIcon className="w-5 h-5 text-slate-400" />} 
               tooltip="Desconto em reais." 
             />
@@ -953,8 +959,10 @@ ${results && results.downPayment > 0 ? `Sinal/Entrada: ${formattedDown}\nValor R
               label="Entrada / Sinal (R$)" 
               name="downPayment" 
               value={downPayment} 
+              type="text"
               onChange={(e) => setDownPayment(e.target.value)} 
-              placeholder="ex: 50.00" 
+              onBlur={() => formatPriceOnBlur(downPayment, setDownPayment)}
+              placeholder="ex: 50,00" 
               icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} 
               tooltip="Valor pago antecipadamente." 
             />
