@@ -175,7 +175,7 @@ export const BannerAdesivoModule: React.FC<BannerAdesivoModuleProps> = ({
   setToast,
   isMac
 }) => {
-  // Core state
+  // Core state - Lado 1 (Largura), Lado 2 (Altura), Valor de Venda (por M²) e Quantidade
   const [width, setWidth] = useState('');
   const [height, setHeight] = useState('');
   const [desiredQuantity, setDesiredQuantity] = useState('1');
@@ -195,15 +195,14 @@ export const BannerAdesivoModule: React.FC<BannerAdesivoModuleProps> = ({
 
   // Results State
   const [results, setResults] = useState<{
-    unitArea: number; // in m²
-    totalArea: number; // in m²
+    unitArea: number; // em m²
+    totalArea: number; // em m²
     subtotal: number;
     extraCost: number;
     discount: number;
     totalCost: number;
     downPayment: number;
     remainingValue: number;
-    isMinimumApplied?: boolean;
   } | null>(null);
 
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
@@ -213,6 +212,30 @@ export const BannerAdesivoModule: React.FC<BannerAdesivoModuleProps> = ({
   const orderModalContentRef = useRef<HTMLDivElement>(null);
   const productionOrderRef = useRef<HTMLDivElement>(null);
   const orderNumber = useRef(`OS-${Date.now().toString().slice(-6)}`);
+
+  // Utilitário para converter dimensões em metros com precisão:
+  // Se o usuário digitar valores acima de 20 (ex: 100 ou 150), normaliza centímetros (100cm = 1,00m, 150cm = 1,50m)
+  // Se digitar valores até 20 (ex: 1,00 ou 1,50), já são metros
+  const parseDimensionInMeters = (val: string): number => {
+    if (!val) return 0;
+    const clean = String(val).replace(',', '.').trim();
+    const num = parseFloat(clean);
+    if (isNaN(num) || num <= 0) return 0;
+    return num > 20 ? (num / 100) : num;
+  };
+
+  const parseNumber = (val: string): number => {
+    if (!val) return 0;
+    const clean = String(val).replace(',', '.').trim();
+    const num = parseFloat(clean);
+    return isNaN(num) || num < 0 ? 0 : num;
+  };
+
+  const qtyParsed = (val?: string) => {
+    const raw = val ?? desiredQuantity;
+    const p = parseInt(raw || '1', 10);
+    return isNaN(p) || p <= 0 ? 1 : p;
+  };
 
   // Prefill price when media type changes (if costPerM2 is empty or matching previous default)
   const previousMedia = useRef(mediaType);
@@ -230,9 +253,9 @@ export const BannerAdesivoModule: React.FC<BannerAdesivoModuleProps> = ({
     if (editingBudget && editingBudget.budgetType === 'banner_adesivo') {
       setWidth(editingBudget.objectDimensions.width || '');
       setHeight(editingBudget.objectDimensions.height || '');
-      setDesiredQuantity(editingBudget.desiredQuantity || '');
-      setCostPerM2(editingBudget.costPerPage || ''); // mapping costPerM2 to costPerPage
-      setMediaType(editingBudget.paperType || mediaTypes[0]); // mapping mediaType to paperType
+      setDesiredQuantity(editingBudget.desiredQuantity || '1');
+      setCostPerM2(editingBudget.costPerPage || '90,00');
+      setMediaType(editingBudget.paperType || mediaTypes[0]);
       setFinishing(editingBudget.finishing || finishingOptions[0]);
       setExtraCost(editingBudget.extraCost || '');
       setDiscount(editingBudget.discount || '');
@@ -285,18 +308,16 @@ export const BannerAdesivoModule: React.FC<BannerAdesivoModuleProps> = ({
 
   const formatDimensionOnBlur = (val: string, setter: (v: string) => void) => {
     if (!val) return;
-    const cleanVal = val.replace(',', '.');
-    const num = parseFloat(cleanVal);
-    if (!isNaN(num) && num > 0) {
-      setter(num.toFixed(2).replace('.', ','));
+    const m = parseDimensionInMeters(val);
+    if (m > 0) {
+      setter(m.toFixed(2).replace('.', ','));
     }
   };
 
   const formatPriceOnBlur = (val: string, setter: (v: string) => void) => {
     if (!val) return;
-    const cleanVal = val.replace(',', '.');
-    const num = parseFloat(cleanVal);
-    if (!isNaN(num) && num >= 0) {
+    const num = parseNumber(val);
+    if (num >= 0) {
       setter(num.toFixed(2).replace('.', ','));
     }
   };
@@ -310,26 +331,28 @@ export const BannerAdesivoModule: React.FC<BannerAdesivoModuleProps> = ({
     discVal?: string;
     downVal?: string;
   }) => {
-    const w = parseFloat((overrides?.widthVal ?? width).replace(',', '.'));
-    const h = parseFloat((overrides?.heightVal ?? height).replace(',', '.'));
-    const qty = parseInt(overrides?.qtyVal ?? desiredQuantity, 10);
-    const priceM2 = parseFloat((overrides?.costVal ?? costPerM2).replace(',', '.'));
-    const extra = parseFloat(((overrides?.extraVal ?? extraCost) || '0').replace(',', '.'));
-    const disc = parseFloat(((overrides?.discVal ?? discount) || '0').replace(',', '.'));
-    const down = parseFloat(((overrides?.downVal ?? downPayment) || '0').replace(',', '.'));
+    const rawW = overrides?.widthVal ?? width;
+    const rawH = overrides?.heightVal ?? height;
+    const w = parseDimensionInMeters(rawW);
+    const h = parseDimensionInMeters(rawH);
+    const qtyInput = overrides?.qtyVal ?? desiredQuantity;
+    const qty = qtyParsed(qtyInput);
+    const priceM2 = parseNumber(overrides?.costVal ?? costPerM2);
+    const extra = parseNumber(overrides?.extraVal ?? extraCost);
+    const disc = parseNumber(overrides?.discVal ?? discount);
+    const down = parseNumber(overrides?.downVal ?? downPayment);
 
-    if (isNaN(w) || isNaN(h) || isNaN(qty) || isNaN(priceM2) || w <= 0 || h <= 0 || qty <= 0 || priceM2 <= 0) {
+    if (w <= 0 || h <= 0) {
       setResults(null);
       return null;
     }
 
-    // Area of a single item in m²: (width_cm / 100) * (height_cm / 100)
-    const unitArea = (w / 100) * (h / 100);
+    // Fórmula exata: Lado 1 x Lado 2 = Área (m²) x Valor de Venda = Total
+    // Exemplo: 1,00m x 1,50m = 1,50 m² x R$ 90,00 = R$ 135,00
+    const unitArea = w * h;
     const totalArea = unitArea * qty;
     const subtotal = totalArea * priceM2;
-    const rawTotal = subtotal + extra - disc;
-    const totalCost = Math.max(90.00, rawTotal);
-    const isMinimumApplied = rawTotal < 90.00;
+    const totalCost = Math.max(0, subtotal + extra - disc);
     const remainingValue = Math.max(0, totalCost - down);
 
     const calculated = {
@@ -340,34 +363,38 @@ export const BannerAdesivoModule: React.FC<BannerAdesivoModuleProps> = ({
       discount: disc,
       totalCost,
       downPayment: down,
-      remainingValue,
-      isMinimumApplied
+      remainingValue
     };
 
     setResults(calculated);
     return calculated;
   };
 
-  const handleCalculate = () => {
-    const w = parseFloat(width.replace(',', '.'));
-    const h = parseFloat(height.replace(',', '.'));
-    const qty = parseInt(desiredQuantity, 10);
-    const priceM2 = parseFloat(costPerM2.replace(',', '.'));
+  // Recalcula em tempo real sempre que qualquer dado for digitado
+  useEffect(() => {
+    calculateResults();
+  }, [width, height, desiredQuantity, costPerM2, extraCost, discount, downPayment]);
 
-    if (!width || isNaN(w) || w <= 0) {
-      setToast({ message: 'Por favor, insira a Largura corretamente.', type: 'info' });
+  const handleCalculate = () => {
+    const w = parseDimensionInMeters(width);
+    const h = parseDimensionInMeters(height);
+    const priceM2 = parseNumber(costPerM2);
+    const qty = qtyParsed(desiredQuantity);
+
+    if (!width || w <= 0) {
+      setToast({ message: 'Por favor, insira a medida do Lado 1 (Largura).', type: 'info' });
       return;
     }
-    if (!height || isNaN(h) || h <= 0) {
-      setToast({ message: 'Por favor, insira a Altura corretamente.', type: 'info' });
+    if (!height || h <= 0) {
+      setToast({ message: 'Por favor, insira a medida do Lado 2 (Altura).', type: 'info' });
       return;
     }
-    if (!desiredQuantity || isNaN(qty) || qty <= 0) {
+    if (qty <= 0) {
       setToast({ message: 'Por favor, insira a Quantidade corretamente.', type: 'info' });
       return;
     }
-    if (!costPerM2 || isNaN(priceM2) || priceM2 <= 0) {
-      setToast({ message: 'Por favor, insira o Preço por M² corretamente.', type: 'info' });
+    if (!costPerM2 || priceM2 <= 0) {
+      setToast({ message: 'Por favor, insira o Valor de Venda (R$/m²).', type: 'info' });
       return;
     }
 
@@ -389,7 +416,7 @@ export const BannerAdesivoModule: React.FC<BannerAdesivoModuleProps> = ({
         extraCost,
         discount,
         gap: '0',
-        jobDescription: jobDescription || `Banner/Adesivo ${width}x${height} cm`,
+        jobDescription: jobDescription || `Banner/Adesivo ${w.toFixed(2).replace('.', ',')}x${h.toFixed(2).replace('.', ',')} m`,
         paperType: mediaType,
         colors: 'N/A',
         finishing,
@@ -405,19 +432,19 @@ export const BannerAdesivoModule: React.FC<BannerAdesivoModuleProps> = ({
           extraCost: calculated.extraCost,
           discount: calculated.discount,
           totalCost: calculated.totalCost,
-          itemsPerPage: qtyParsed()
+          itemsPerPage: qty
         }
       };
 
       onAddHistory(historyItem);
-      setToast({ message: 'Cálculo de Banner/Adesivo realizado com sucesso!', type: 'success' });
+      setToast({ message: 'Cálculo de Área e Valor realizado com sucesso!', type: 'success' });
     }
   };
 
   const handleSave = () => {
     const calc = results || calculateResults();
     if (!calc) {
-      setToast({ message: 'Por favor, realize o cálculo antes de salvar.', type: 'info' });
+      setToast({ message: 'Por favor, insira os lados e o valor de venda antes de salvar.', type: 'info' });
       return;
     }
 
@@ -474,10 +501,8 @@ export const BannerAdesivoModule: React.FC<BannerAdesivoModuleProps> = ({
     setClientPhone('');
     setClientFolder('');
     setResults(null);
-    setToast({ message: 'Formulário de Banner/Adesivo limpo.', type: 'info' });
+    setToast({ message: 'Formulário limpo com sucesso.', type: 'info' });
   };
-
-  const qtyParsed = () => parseInt(desiredQuantity, 10) || 0;
 
   // Shortcuts register
   useEffect(() => {
@@ -503,16 +528,21 @@ export const BannerAdesivoModule: React.FC<BannerAdesivoModuleProps> = ({
     return val.replace(/,00/g, '').replace(/\.00/g, '');
   };
 
-  const formattedTamanho = cleanZeros(`${width}x${height}`);
-  const formattedTotal = results ? cleanZeros(results.totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })) : 'N/A';
-  const formattedDown = results && results.downPayment > 0 ? cleanZeros(results.downPayment.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })) : '';
-  const formattedRemaining = results && results.remainingValue > 0 ? cleanZeros(results.remainingValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })) : '';
+  const wM = parseDimensionInMeters(width);
+  const hM = parseDimensionInMeters(height);
+  const formattedTamanho = wM > 0 && hM > 0 
+    ? `${wM.toFixed(2).replace('.', ',')} m × ${hM.toFixed(2).replace('.', ',')} m` 
+    : (width && height ? `${width} × ${height}` : 'Não informado');
+
+  const formattedTotal = results ? results.totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
+  const formattedDown = results && results.downPayment > 0 ? results.downPayment.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '';
+  const formattedRemaining = results && results.remainingValue > 0 ? results.remainingValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '';
 
   const budgetText = `Olá, ${clientName || 'tudo bem'}! Conforme sua solicitação, segue orçamento para aprovação.
 
-*Orçamento - Comunicação Visual (M²)*
+*Orçamento*
 Produto/Serviço: ${jobDescription || 'Banner/Adesivo'}
-Tamanho: ${formattedTamanho} cm
+Tamanho: ${formattedTamanho}
 Quantidade: ${qtyParsed()} unidade(s)
 Acabamento: ${finishing}
 
@@ -770,73 +800,52 @@ ${results && results.downPayment > 0 ? `Sinal/Entrada: ${formattedDown}\nValor R
   );
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-8 animate-fadeIn">
-      {/* Quick Info Block Banner */}
-      <div className="bg-sky-50 border border-sky-100 p-4 rounded-xl text-sky-800 flex items-center gap-3 dark:bg-sky-950/30 dark:border-sky-900/40 dark:text-sky-300">
-        <span className="bg-sky-500 text-white rounded-full p-1.5 shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </span>
-        <p className="text-sm font-medium">
-          <strong>Módulo Comunicação Visual:</strong> Os cálculos de Banners, Lonas e Adesivos são baseados em <strong>metros quadrados (m²)</strong>. Não há necessidade de configurar sangria ou tamanho de papel.
-        </p>
-      </div>
+    <div className="w-full max-w-5xl mx-auto space-y-8 animate-fadeIn">
+      <div className="space-y-8">
+        {/* Core Calculation Card: LADO X LADO X VALOR DE VENDA */}
+        <div className="bg-white p-6 md:p-8 rounded-2xl shadow-md border-2 border-sky-500/20 dark:bg-slate-800 dark:border-sky-500/30">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 mb-6 dark:border-slate-700 gap-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="inline-block w-3 h-3 rounded-full bg-sky-500"></span>
+                <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100">
+                  Cálculo de Área e Valor de Venda
+                </h2>
+              </div>
+              <p className="text-sm font-semibold text-sky-700 dark:text-sky-300 mt-1">
+                Lado 1 (Largura) × Lado 2 (Altura) × Valor de Venda
+              </p>
+            </div>
+            <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 bg-sky-100 dark:bg-sky-900/60 text-sky-800 dark:text-sky-200 rounded-full border border-sky-200 dark:border-sky-700 self-start sm:self-auto">
+              Cálculo Instantâneo
+            </span>
+          </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-        {/* Core Dimensions */}
-        <div className="md:col-span-2 bg-white p-6 rounded-xl shadow-md dark:bg-slate-800">
-          <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 mb-6 dark:text-slate-300 dark:border-slate-700">Dimensões do Banner ou Adesivo</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-end">
             <InputGroup 
-              label="Largura (cm)" 
+              label="Lado 1 - Largura (m)" 
               name="width" 
               value={width} 
               type="text"
               onChange={(e) => setWidth(e.target.value)} 
               onBlur={() => formatDimensionOnBlur(width, setWidth)}
-              placeholder="ex: 100,00" 
+              placeholder="ex: 1,00" 
               icon={<WidthIcon className="w-5 h-5 text-slate-400" />} 
-              tooltip="Insira a largura total em centímetros. Ex: 1 metro = 100 cm" 
+              tooltip="Medida do primeiro lado em metros (ex: 1,00 m ou 100 cm)" 
             />
             <InputGroup 
-              label="Altura (cm)" 
+              label="Lado 2 - Altura (m)" 
               name="height" 
               value={height} 
               type="text"
               onChange={(e) => setHeight(e.target.value)} 
               onBlur={() => formatDimensionOnBlur(height, setHeight)}
-              placeholder="ex: 100,00" 
+              placeholder="ex: 1,50" 
               icon={<HeightIcon className="w-5 h-5 text-slate-400" />} 
-              tooltip="Insira a altura total em centímetros. Ex: 2 metros = 200 cm" 
+              tooltip="Medida do segundo lado em metros (ex: 1,50 m ou 150 cm)" 
             />
-            
-            <div>
-              <LabelWithTooltip htmlFor="mediaType" label="Tipo de Mídia" tooltip="Escolha o material de mídia ideal para a produção." className="mb-1" />
-              <div className="relative rounded-md shadow-sm">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <MediaIcon className="w-5 h-5 text-slate-400" />
-                </div>
-                <select 
-                  id="mediaType" 
-                  name="mediaType" 
-                  className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" 
-                  value={mediaType} 
-                  onChange={(e) => setMediaType(e.target.value)}
-                >
-                  {mediaTypes.map((type) => (<option key={type} value={type}>{type}</option>))}
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Budget details */}
-        <div className="bg-white p-6 rounded-xl shadow-md space-y-6 dark:bg-slate-800">
-          <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 dark:text-slate-300 dark:border-slate-700">Orçamento e Acabamento</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <InputGroup 
-              label="Preço por M² (R$)" 
+              label="Valor de Venda (R$/m²)" 
               name="costPerM2" 
               value={costPerM2} 
               type="text"
@@ -844,145 +853,245 @@ ${results && results.downPayment > 0 ? `Sinal/Entrada: ${formattedDown}\nValor R
               onBlur={() => formatPriceOnBlur(costPerM2, setCostPerM2)}
               placeholder="90,00" 
               icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} 
-              tooltip="Mude o valor do metro quadrado como desejar para este produto." 
+              tooltip="Preço do metro quadrado a ser cobrado na venda." 
             />
             <InputGroup 
-              label="Quantidade Desejada" 
+              label="Quantidade" 
               name="desiredQuantity" 
               value={desiredQuantity} 
               type="text"
               onChange={(e) => setDesiredQuantity(e.target.value)} 
-              placeholder="ex: 1" 
+              placeholder="1" 
               icon={<QuantityIcon className="w-5 h-5 text-slate-400" />} 
-              tooltip="Insira a quantidade total de cópias com essas dimensões." 
+              tooltip="Quantidade de peças com essas mesmas dimensões." 
             />
-            <InputGroup 
-              label="Custo Adicional (R$)" 
-              name="extraCost" 
-              value={extraCost} 
-              type="text"
-              onChange={(e) => setExtraCost(e.target.value)} 
-              onBlur={() => formatPriceOnBlur(extraCost, setExtraCost)}
-              placeholder="ex: 20,00" 
-              icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} 
-              tooltip="Custos adicionais como arte, deslocamento ou suporte." 
-            />
-            
-            <div>
-              <LabelWithTooltip htmlFor="finishing" label="Acabamento" tooltip="Selecione o tipo de acabamento do banner ou adesivo." className="mb-1" />
-              <div className="relative rounded-md shadow-sm">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                  </svg>
+          </div>
+
+          {/* Real-time Calculation Display */}
+          {results ? (
+            <div className="mt-6 p-5 bg-gradient-to-r from-sky-50 via-slate-50 to-emerald-50 dark:from-sky-950/40 dark:via-slate-900/40 dark:to-emerald-950/40 border-2 border-sky-300 dark:border-sky-800 rounded-xl shadow-inner">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div className="p-3.5 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block uppercase tracking-wider">Área Unitária</span>
+                  <span className="text-2xl font-black font-mono text-slate-800 dark:text-slate-100 block mt-1">
+                    {results.unitArea.toFixed(2).replace('.', ',')} m²
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5 font-medium">
+                    {parseDimensionInMeters(width).toFixed(2).replace('.', ',')} × {parseDimensionInMeters(height).toFixed(2).replace('.', ',')} m
+                  </span>
                 </div>
-                <select 
-                  id="finishing" 
-                  name="finishing" 
-                  className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" 
-                  value={finishing} 
-                  onChange={(e) => setFinishing(e.target.value)}
-                >
-                  {finishingOptions.map((opt) => (<option key={opt} value={opt}>{opt}</option>))}
-                </select>
+
+                <div className="p-3.5 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block uppercase tracking-wider">Área Total</span>
+                  <span className="text-2xl font-black font-mono text-sky-700 dark:text-sky-300 block mt-1">
+                    {results.totalArea.toFixed(2).replace('.', ',')} m²
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5 font-medium">
+                    {qtyParsed()} unidade{qtyParsed() !== 1 ? 's' : ''}
+                  </span>
+                </div>
+
+                <div className="p-3.5 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block uppercase tracking-wider">Valor do M²</span>
+                  <span className="text-2xl font-black font-mono text-slate-800 dark:text-slate-100 block mt-1">
+                    {parseNumber(costPerM2).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5 font-medium">
+                    preço por m²
+                  </span>
+                </div>
+
+                <div className="p-3.5 bg-emerald-600 text-white rounded-xl shadow-md border border-emerald-500">
+                  <span className="text-xs font-bold text-emerald-100 block uppercase tracking-wider">Valor Total</span>
+                  <span className="text-2xl font-black font-mono block mt-1">
+                    {results.subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </span>
+                  <span className="text-[11px] text-emerald-100 block mt-0.5 font-medium">
+                    Área Total × Valor M²
+                  </span>
+                </div>
+              </div>
+
+              {/* Equation formula strip */}
+              <div className="mt-4 pt-3 border-t border-sky-200 dark:border-sky-800/80 flex items-center justify-center flex-wrap gap-2 text-sm">
+                <span className="font-bold text-slate-700 dark:text-slate-300">Demonstrativo da Operação:</span>
+                <span className="font-mono bg-white dark:bg-slate-900 px-3.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 font-bold shadow-sm">
+                  {parseDimensionInMeters(width).toFixed(2).replace('.', ',')} m × {parseDimensionInMeters(height).toFixed(2).replace('.', ',')} m = {results.unitArea.toFixed(2).replace('.', ',')} m²
+                  {qtyParsed() > 1 ? ` (× ${qtyParsed()} un = ${results.totalArea.toFixed(2).replace('.', ',')} m²)` : ''}
+                  {' × '}R$ {costPerM2} = <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">{results.subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                </span>
               </div>
             </div>
+          ) : (
+            <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-700/30 border border-slate-200 dark:border-slate-700 rounded-xl text-center text-sm text-slate-500 dark:text-slate-400">
+              Digite o <strong>Lado 1</strong>, <strong>Lado 2</strong> e o <strong>Valor de Venda</strong> para ver o resultado do cálculo na hora.
+              <span className="block text-xs mt-1 text-slate-400 font-mono">Exemplo: 1,00 × 1,50 = 1,50 m² × R$ 90,00 = R$ 135,00</span>
+            </div>
+          )}
+        </div>
 
-            <div className="sm:col-span-2">
-              <LabelWithTooltip htmlFor="jobDescription" label="Descrição do Serviço" tooltip="Identificação do serviço no orçamento. Ex: Banner de Aniversário" className="mb-1" />
-              <div className="relative rounded-md shadow-sm">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 pt-2">
-                  <DescriptionIcon className="w-5 h-5 text-slate-400" />
+        {/* Secondary Details Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Media and Finishing */}
+          <div className="bg-white p-6 rounded-2xl shadow-md space-y-6 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <h3 className="text-xl font-bold text-slate-800 border-b pb-3 dark:text-slate-200 dark:border-slate-700">
+              Mídia e Acabamento
+            </h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <LabelWithTooltip htmlFor="mediaType" label="Tipo de Mídia" tooltip="Escolha o material de mídia para a produção." className="mb-1" />
+                <div className="relative rounded-md shadow-sm">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <MediaIcon className="w-5 h-5 text-slate-400" />
+                  </div>
+                  <select 
+                    id="mediaType" 
+                    name="mediaType" 
+                    className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" 
+                    value={mediaType} 
+                    onChange={(e) => setMediaType(e.target.value)}
+                  >
+                    {mediaTypes.map((type) => (<option key={type} value={type}>{type}</option>))}
+                  </select>
                 </div>
-                <textarea 
-                  id="jobDescription" 
-                  name="jobDescription" 
-                  rows={2} 
-                  className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" 
-                  placeholder="Ex: Banner com bastão e cordão para divulgação de loja..." 
-                  value={jobDescription} 
-                  onChange={(e) => setJobDescription(e.target.value)} 
-                />
+              </div>
+
+              <div>
+                <LabelWithTooltip htmlFor="finishing" label="Acabamento" tooltip="Selecione o tipo de acabamento do banner ou adesivo." className="mb-1" />
+                <div className="relative rounded-md shadow-sm">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                  </div>
+                  <select 
+                    id="finishing" 
+                    name="finishing" 
+                    className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" 
+                    value={finishing} 
+                    onChange={(e) => setFinishing(e.target.value)}
+                  >
+                    {finishingOptions.map((opt) => (<option key={opt} value={opt}>{opt}</option>))}
+                  </select>
+                </div>
+              </div>
+
+              <InputGroup 
+                label="Custo Adicional (R$)" 
+                name="extraCost" 
+                value={extraCost} 
+                type="text"
+                onChange={(e) => setExtraCost(e.target.value)} 
+                onBlur={() => formatPriceOnBlur(extraCost, setExtraCost)}
+                placeholder="ex: 20,00" 
+                icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} 
+                tooltip="Custos opcionais como arte, deslocamento ou suportes." 
+              />
+
+              <InputGroup 
+                label="Desconto (R$)" 
+                name="discount" 
+                value={discount} 
+                type="text"
+                onChange={(e) => setDiscount(e.target.value)} 
+                onBlur={() => formatPriceOnBlur(discount, setDiscount)}
+                placeholder="ex: 15,00" 
+                icon={<DiscountIcon className="w-5 h-5 text-slate-400" />} 
+                tooltip="Desconto em reais aplicado ao total." 
+              />
+
+              <div className="sm:col-span-2">
+                <LabelWithTooltip htmlFor="jobDescription" label="Descrição do Serviço" tooltip="Identificação do serviço no orçamento. Ex: Banner com ilhós para fachada" className="mb-1" />
+                <div className="relative rounded-md shadow-sm">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 pt-2">
+                    <DescriptionIcon className="w-5 h-5 text-slate-400" />
+                  </div>
+                  <textarea 
+                    id="jobDescription" 
+                    name="jobDescription" 
+                    rows={2} 
+                    className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" 
+                    placeholder="Ex: Banner com bastão e cordão para divulgação de loja..." 
+                    value={jobDescription} 
+                    onChange={(e) => setJobDescription(e.target.value)} 
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Client Info details */}
-        <div className="bg-white p-6 rounded-xl shadow-md space-y-6 dark:bg-slate-800">
-          <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 dark:text-slate-300 dark:border-slate-700">Dados do Cliente</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="sm:col-span-2">
-              <InputGroup 
-                label="Nome do Cliente" 
-                name="clientName" 
-                value={clientName} 
-                onChange={(e) => setClientName(e.target.value)} 
-                placeholder="Cliente ou Empresa" 
-                icon={<UserIcon className="w-5 h-5 text-slate-400" />} 
-                type="text" 
-                tooltip="Identificação do cliente." 
-              />
-            </div>
-            <InputGroup 
-              label="WhatsApp" 
-              name="clientPhone" 
-              value={clientPhone} 
-              onChange={handlePhoneChange} 
-              placeholder="(00) 00000-0000" 
-              icon={<PhoneIcon className="w-5 h-5 text-slate-400" />} 
-              type="tel" 
-              tooltip="Telefone de contato do cliente." 
-            />
-            <InputGroup 
-              label="Pasta no Computador" 
-              name="clientFolder" 
-              value={clientFolder} 
-              onChange={(e) => setClientFolder(e.target.value)} 
-              placeholder="ex: Pasta João" 
-              icon={<FolderIcon className="w-5 h-5 text-slate-400" />} 
-              type="text" 
-              tooltip="Identificação da pasta de arquivos ou artes." 
-            />
-            <InputGroup 
-              label="Desconto (R$)" 
-              name="discount" 
-              value={discount} 
-              type="text"
-              onChange={(e) => setDiscount(e.target.value)} 
-              onBlur={() => formatPriceOnBlur(discount, setDiscount)}
-              placeholder="ex: 15,00" 
-              icon={<DiscountIcon className="w-5 h-5 text-slate-400" />} 
-              tooltip="Desconto em reais." 
-            />
-            <InputGroup 
-              label="Entrada / Sinal (R$)" 
-              name="downPayment" 
-              value={downPayment} 
-              type="text"
-              onChange={(e) => setDownPayment(e.target.value)} 
-              onBlur={() => formatPriceOnBlur(downPayment, setDownPayment)}
-              placeholder="ex: 50,00" 
-              icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} 
-              tooltip="Valor pago antecipadamente." 
-            />
+          {/* Client & Payment Info */}
+          <div className="bg-white p-6 rounded-2xl shadow-md space-y-6 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <h3 className="text-xl font-bold text-slate-800 border-b pb-3 dark:text-slate-200 dark:border-slate-700">
+              Dados do Cliente & Pagamento
+            </h3>
             
-            <div className="sm:col-span-2">
-              <LabelWithTooltip htmlFor="paymentMethod" label="Forma de Pagamento" tooltip="Meio preferencial para quitação do pedido." className="mb-1" />
-              <div className="relative rounded-md shadow-sm">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <CreditCardIcon className="w-5 h-5 text-slate-400" />
-                </div>
-                <select 
-                  id="paymentMethod" 
-                  name="paymentMethod" 
-                  className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" 
-                  value={paymentMethod} 
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                >
-                  {paymentOptions.map((opt) => (<option key={opt} value={opt}>{opt}</option>))}
-                </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="sm:col-span-2">
+                <InputGroup 
+                  label="Nome do Cliente" 
+                  name="clientName" 
+                  value={clientName} 
+                  onChange={(e) => setClientName(e.target.value)} 
+                  placeholder="Cliente ou Empresa" 
+                  icon={<UserIcon className="w-5 h-5 text-slate-400" />} 
+                  type="text" 
+                  tooltip="Identificação do cliente para o orçamento." 
+                />
               </div>
+
+              <InputGroup 
+                label="WhatsApp" 
+                name="clientPhone" 
+                value={clientPhone} 
+                onChange={handlePhoneChange} 
+                placeholder="(00) 00000-0000" 
+                icon={<PhoneIcon className="w-5 h-5 text-slate-400" />} 
+                type="tel" 
+                tooltip="Telefone de contato do cliente." 
+              />
+
+              <InputGroup 
+                label="Pasta no Computador" 
+                name="clientFolder" 
+                value={clientFolder} 
+                onChange={(e) => setClientFolder(e.target.value)} 
+                placeholder="ex: Pasta João" 
+                icon={<FolderIcon className="w-5 h-5 text-slate-400" />} 
+                type="text" 
+                tooltip="Pasta de arquivos ou artes do cliente." 
+              />
+
+              <div>
+                <LabelWithTooltip htmlFor="paymentMethod" label="Forma de Pagamento" tooltip="Meio preferencial para quitação do pedido." className="mb-1" />
+                <div className="relative rounded-md shadow-sm">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <CreditCardIcon className="w-5 h-5 text-slate-400" />
+                  </div>
+                  <select 
+                    id="paymentMethod" 
+                    name="paymentMethod" 
+                    className="block w-full rounded-md border-slate-300 pl-10 py-2 focus:border-sky-500 focus:ring-sky-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" 
+                    value={paymentMethod} 
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  >
+                    {paymentOptions.map((opt) => (<option key={opt} value={opt}>{opt}</option>))}
+                  </select>
+                </div>
+              </div>
+
+              <InputGroup 
+                label="Entrada / Sinal (R$)" 
+                name="downPayment" 
+                value={downPayment} 
+                type="text"
+                onChange={(e) => setDownPayment(e.target.value)} 
+                onBlur={() => formatPriceOnBlur(downPayment, setDownPayment)}
+                placeholder="ex: 50,00" 
+                icon={<MoneyIcon className="w-5 h-5 text-slate-400" />} 
+                tooltip="Valor pago antecipadamente." 
+              />
             </div>
           </div>
         </div>
@@ -992,9 +1101,9 @@ ${results && results.downPayment > 0 ? `Sinal/Entrada: ${formattedDown}\nValor R
       <div className="flex justify-center gap-4 flex-wrap mt-8">
         <button 
           onClick={handleCalculate} 
-          className="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-all duration-300 text-lg active:scale-[0.98] active:brightness-95 flex items-center gap-2"
+          className="bg-sky-600 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-all duration-300 text-lg active:scale-[0.98] flex items-center gap-2"
         >
-          <span>Calcular</span>
+          <span>Calcular Orçamento</span>
           <kbd className="hidden sm:inline-block text-[10px] uppercase font-semibold tracking-wider bg-sky-700 text-sky-100 px-1.5 py-0.5 rounded opacity-90 border border-sky-500 font-mono select-none">
             {isMac ? '⌘↵' : 'Ctrl+Enter'}
           </kbd>
@@ -1004,7 +1113,7 @@ ${results && results.downPayment > 0 ? `Sinal/Entrada: ${formattedDown}\nValor R
           <>
             <button 
               onClick={handleSave} 
-              className="bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95"
+              className="bg-green-600 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98]"
             >
               <UpdateIcon className="w-5 h-5" />
               <span>Atualizar Orçamento</span>
@@ -1014,7 +1123,7 @@ ${results && results.downPayment > 0 ? `Sinal/Entrada: ${formattedDown}\nValor R
             </button>
             <button 
               onClick={onCancelEdit} 
-              className="bg-slate-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95"
+              className="bg-slate-500 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98]"
             >
               <CancelIcon className="w-5 h-5" />
               <span>Cancelar</span>
@@ -1024,7 +1133,7 @@ ${results && results.downPayment > 0 ? `Sinal/Entrada: ${formattedDown}\nValor R
           <>
             <button 
               onClick={handleSave} 
-              className="bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95"
+              className="bg-green-600 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98]"
             >
               <SaveIcon className="w-5 h-5" />
               <span>Salvar Orçamento</span>
@@ -1034,7 +1143,7 @@ ${results && results.downPayment > 0 ? `Sinal/Entrada: ${formattedDown}\nValor R
             </button>
             <button 
               onClick={handleClear} 
-              className="bg-slate-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98] active:brightness-95"
+              className="bg-slate-500 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition-all duration-300 text-lg flex items-center gap-2 active:scale-[0.98]"
             >
               <ClearIcon className="w-5 h-5" />
               <span>Limpar</span>
@@ -1045,7 +1154,7 @@ ${results && results.downPayment > 0 ? `Sinal/Entrada: ${formattedDown}\nValor R
 
       {/* Calculated Results Block */}
       {results && (
-        <div className="bg-slate-900 text-white p-6 md:p-8 rounded-xl shadow-xl dark:bg-black/40 border border-slate-800 transition-all duration-500 scale-100 relative overflow-hidden">
+        <div className="bg-slate-900 text-white p-6 md:p-8 rounded-2xl shadow-xl dark:bg-black/60 border border-slate-800 transition-all duration-500 scale-100 relative overflow-hidden">
           <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-48 h-48 bg-sky-600/10 rounded-full blur-2xl"></div>
           
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-6 border-b border-slate-800 relative z-10">
@@ -1059,14 +1168,14 @@ ${results && results.downPayment > 0 ? `Sinal/Entrada: ${formattedDown}\nValor R
             <div className="flex gap-2">
               <button 
                 onClick={() => setIsModalOpen(true)} 
-                className="bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition duration-200"
+                className="bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 transition duration-200"
               >
                 <CopyIcon className="w-4 h-4" />
                 Copiar Orçamento
               </button>
               <button 
                 onClick={() => setIsOrderModalOpen(true)} 
-                className="bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition duration-200"
+                className="bg-sky-600 hover:bg-sky-500 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 transition duration-200"
               >
                 <PrintIcon className="w-4 h-4" />
                 Gerar Ordem de Serviço
@@ -1078,17 +1187,17 @@ ${results && results.downPayment > 0 ? `Sinal/Entrada: ${formattedDown}\nValor R
             <div className="bg-slate-800/50 border border-slate-800 p-4 rounded-xl">
               <span className="text-slate-400 text-xs font-semibold block uppercase tracking-wider">Área Unitária</span>
               <span className="text-xl md:text-2xl font-bold font-mono text-slate-100 block mt-1">
-                {results.unitArea.toFixed(4).replace('.', ',')} m²
+                {results.unitArea.toFixed(2).replace('.', ',')} m²
               </span>
               <span className="text-slate-500 text-[10px] block mt-0.5">
-                ({width}x{height} cm)
+                ({parseDimensionInMeters(width).toFixed(2).replace('.', ',')} × {parseDimensionInMeters(height).toFixed(2).replace('.', ',')} m)
               </span>
             </div>
 
             <div className="bg-slate-800/50 border border-slate-800 p-4 rounded-xl">
               <span className="text-slate-400 text-xs font-semibold block uppercase tracking-wider">Área Total</span>
               <span className="text-xl md:text-2xl font-bold font-mono text-slate-100 block mt-1">
-                {results.totalArea.toFixed(3).replace('.', ',')} m²
+                {results.totalArea.toFixed(2).replace('.', ',')} m²
               </span>
               <span className="text-slate-500 text-[10px] block mt-0.5">
                 (x {qtyParsed()} unidade{qtyParsed() !== 1 ? 's' : ''})
@@ -1101,7 +1210,7 @@ ${results && results.downPayment > 0 ? `Sinal/Entrada: ${formattedDown}\nValor R
                 {results.subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </span>
               <span className="text-slate-500 text-[10px] block mt-0.5">
-                ({parseFloat(costPerM2 || '0').toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/m²)
+                ({parseNumber(costPerM2).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/m²)
               </span>
             </div>
 
@@ -1145,16 +1254,11 @@ ${results && results.downPayment > 0 ? `Sinal/Entrada: ${formattedDown}\nValor R
                 </div>
               )}
 
-              <div className="text-right flex flex-row md:flex-col justify-between md:justify-center p-3 bg-emerald-950/30 border border-emerald-800/40 rounded-xl">
+              <div className="text-right flex flex-row md:flex-col justify-between md:justify-center p-3.5 bg-emerald-950/30 border border-emerald-800/40 rounded-xl">
                 <span className="text-emerald-400 text-xs font-bold uppercase tracking-wider md:text-right text-left">Valor Total Final</span>
                 <span className="text-2xl md:text-3xl font-black font-mono text-emerald-400 mt-1">
                   {results.totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </span>
-                {results.isMinimumApplied && (
-                  <span className="text-[10px] text-amber-400 font-semibold block mt-0.5 md:text-right text-left">
-                    (Mínimo de R$ 90,00)
-                  </span>
-                )}
               </div>
             </div>
           </div>
@@ -1251,7 +1355,9 @@ ${results && results.downPayment > 0 ? `Sinal/Entrada: ${formattedDown}\nValor R
                                       </div>
                                       <div className="mt-2">
                                           <strong className="font-semibold text-gray-700">Tamanho Unitário:</strong>
-                                          <p className="pl-1 mt-0.5 text-black font-semibold">{width} x {height} cm</p>
+                                          <p className="pl-1 mt-0.5 text-black font-semibold">
+                                            {parseDimensionInMeters(width).toFixed(2).replace('.', ',')} m × {parseDimensionInMeters(height).toFixed(2).replace('.', ',')} m
+                                          </p>
                                       </div>
                                       <div className="mt-2">
                                           <strong className="font-semibold text-gray-700">Acabamento:</strong>
@@ -1259,7 +1365,7 @@ ${results && results.downPayment > 0 ? `Sinal/Entrada: ${formattedDown}\nValor R
                                       </div>
                                       <div className="mt-2">
                                           <strong className="font-semibold text-gray-700">Área de Mídia Total:</strong>
-                                          <p className="pl-1 mt-0.5 text-black font-semibold">{results?.totalArea.toFixed(3).replace('.', ',')} m²</p>
+                                          <p className="pl-1 mt-0.5 text-black font-semibold">{results?.totalArea.toFixed(2).replace('.', ',')} m²</p>
                                       </div>
                                   </div>
                               </section>
