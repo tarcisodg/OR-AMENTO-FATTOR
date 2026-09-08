@@ -1,5 +1,6 @@
 import React from 'react';
 import type { SavedBudget } from '../types';
+import { generateCustomerBudgetPdf } from '../utils/generateBudgetPdf';
 
 const LoadIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -13,6 +14,13 @@ const DeleteIcon: React.FC<{className?: string}> = ({ className }) => (
     </svg>
 );
 
+const PdfIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 15h6m-6 3h3" />
+    </svg>
+);
+
 interface SavedBudgetsListProps {
   budgets: SavedBudget[];
   onLoad: (id: string) => void;
@@ -20,6 +28,30 @@ interface SavedBudgetsListProps {
 }
 
 const SavedBudgetsList: React.FC<SavedBudgetsListProps> = ({ budgets, onLoad, onDelete }) => {
+  const handleExportPdf = (budget: SavedBudget) => {
+    const isBanner = budget.budgetType === 'banner_adesivo';
+    const dimensionsText = isBanner 
+        ? `${budget.objectDimensions.width} × ${budget.objectDimensions.height}`
+        : `${budget.objectDimensions.width} × ${budget.objectDimensions.height} cm`;
+    
+    generateCustomerBudgetPdf({
+        title: isBanner ? 'Orçamento - Banner e Adesivos' : 'Orçamento - Impressão Gráfica',
+        clientName: budget.clientName,
+        clientPhone: budget.clientPhone,
+        jobDescription: budget.jobDescription || budget.name,
+        dimensionsText,
+        quantityText: `${budget.desiredQuantity || '1'} un`,
+        material: isBanner ? budget.paperType || 'Comunicação Visual' : budget.paperType,
+        colors: budget.colors && budget.colors !== 'Não especificado' ? budget.colors : undefined,
+        finishing: budget.finishing && budget.finishing !== 'Não especificado' && budget.finishing !== 'Nenhum' ? budget.finishing : undefined,
+        subtotal: budget.budgetResult?.subtotal,
+        discount: budget.budgetResult?.discount,
+        totalCost: budget.budgetResult?.totalCost || 0,
+        paymentMethod: budget.paymentMethod,
+        downPayment: parseFloat(budget.downPayment) || 0,
+    });
+  };
+
   return (
     <div className="bg-white p-6 rounded-xl shadow-md dark:bg-slate-800 flex flex-col h-full">
         <h2 className="text-2xl font-semibold text-slate-700 border-b pb-3 mb-6 dark:text-slate-300 dark:border-slate-700 flex-shrink-0">Orçamentos Salvos</h2>
@@ -43,6 +75,14 @@ const SavedBudgetsList: React.FC<SavedBudgetsListProps> = ({ budgets, onLoad, on
                             <p className="text-xs text-slate-500 dark:text-slate-400">Salvo em: {budget.createdAt}</p>
                         </div>
                         <div className="flex items-center gap-2">
+                            <button 
+                                onClick={() => handleExportPdf(budget)} 
+                                className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-full transition-colors dark:text-emerald-400 dark:hover:bg-emerald-900/50"
+                                title="Exportar PDF do Orçamento"
+                                aria-label={`Exportar PDF do orçamento ${budget.name}`}
+                            >
+                                <PdfIcon className="w-5 h-5" />
+                            </button>
                             <button 
                                 onClick={() => onLoad(budget.id)} 
                                 className="p-2 text-sky-600 hover:bg-sky-100 rounded-full transition-colors dark:text-sky-400 dark:hover:bg-sky-900/50"

@@ -3,11 +3,19 @@ import React, { useState, useRef } from 'react';
 import type { CalculationResults, BudgetResult } from '../types';
 import VisualizationGrid from './VisualizationGrid';
 import PrintableOrder from './PrintableOrder';
+import { generateCustomerBudgetPdf } from '../utils/generateBudgetPdf';
 
 // @ts-ignore
 const { jsPDF } = window.jspdf;
 // @ts-ignore
 declare const html2canvas: any;
+
+const PdfIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 15h6m-6 3h3" />
+    </svg>
+);
 
 
 interface ResultsDisplayProps {
@@ -172,6 +180,38 @@ Forma de Pagamento: ${paymentMethod}
              setTimeout(() => {
                 setCopyButtonText('Copiar Texto e Fechar');
             }, 2000);
+        });
+    };
+
+    const handleExportBudgetPdf = () => {
+        if (!budgetResult) return;
+
+        const dimensionsFormatted = `${objectDimensions.width.toString().replace('.', ',')} × ${objectDimensions.height.toString().replace('.', ',')} cm`;
+        const qtyFormatted = `${desiredQuantity || '1'} un`;
+
+        generateCustomerBudgetPdf({
+            title: 'Orçamento - Impressão Gráfica',
+            orderNumber: orderNumber.current,
+            clientName,
+            clientPhone,
+            jobDescription: jobDescription || 'Impressão Gráfica Personalizada',
+            dimensionsText: dimensionsFormatted,
+            quantityText: qtyFormatted,
+            material: paperType,
+            colors: colors !== 'Não especificado' ? colors : undefined,
+            finishing: finishing && finishing !== 'Não especificado' && finishing !== 'Nenhum' ? finishing : undefined,
+            subtotal: budgetResult.subtotal,
+            discount: budgetResult.discount,
+            totalCost: budgetResult.totalCost,
+            paymentMethod,
+            downPayment: parseFloat(downPayment) || 0,
+            remainingValue,
+            observations: [
+                '• Prazo de produção: 2 a 4 dias úteis após confirmação e aprovação do arquivo final.',
+                '• O corte e as tonalidades podem sofrer variações técnicas de até 5% a 10% decorrentes do processo gráfico.',
+                '• Orçamento válido por 5 dias corridos a partir da data de emissão.',
+                '• Favor conferir dados cadastrais, textos e telefones antes de autorizar a rodagem.',
+            ]
         });
     };
 
@@ -402,6 +442,14 @@ Forma de Pagamento: ${paymentMethod}
                             <CopyIcon className="w-5 h-5 mr-2" />
                             Copiar Orçamento
                         </button>
+                        <button
+                            onClick={handleExportBudgetPdf}
+                            className="bg-emerald-600 text-white font-semibold py-2 px-5 rounded-lg shadow hover:bg-emerald-700 transition-all duration-300 flex items-center justify-center w-full sm:w-auto"
+                            title="Exportar orçamento formatado em PDF para o cliente"
+                        >
+                            <PdfIcon className="w-5 h-5 mr-2" />
+                            Exportar PDF (Cliente)
+                        </button>
                          <button
                             onClick={handlePrintProductionOrder}
                             className="bg-slate-700 text-white font-semibold py-2 px-5 rounded-lg shadow hover:bg-slate-800 transition-all duration-300 flex items-center justify-center w-full sm:w-auto dark:bg-slate-600 dark:hover:bg-slate-500"
@@ -482,13 +530,23 @@ Forma de Pagamento: ${paymentMethod}
                         <div className="bg-slate-50 p-4 rounded-md border border-slate-200 mb-6 max-h-60 overflow-y-auto dark:bg-slate-800 dark:border-slate-700">
                             <pre className="text-sm text-slate-700 whitespace-pre-wrap font-sans dark:text-slate-300">{budgetText}</pre>
                         </div>
-                        <button
-                            onClick={handleCopyAndClose}
-                            className="w-full bg-sky-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-sky-700 transition-all duration-300 flex items-center justify-center"
-                        >
-                            <CopyIcon className="w-5 h-5 mr-2" />
-                            {copyButtonText}
-                        </button>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <button
+                                onClick={handleExportBudgetPdf}
+                                className="flex-1 bg-emerald-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-emerald-700 transition-all duration-300 flex items-center justify-center text-sm"
+                                title="Baixar arquivo PDF com os dados do cliente"
+                            >
+                                <PdfIcon className="w-5 h-5 mr-2" />
+                                Baixar PDF (Cliente)
+                            </button>
+                            <button
+                                onClick={handleCopyAndClose}
+                                className="flex-1 bg-sky-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-sky-700 transition-all duration-300 flex items-center justify-center text-sm"
+                            >
+                                <CopyIcon className="w-5 h-5 mr-2" />
+                                {copyButtonText}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
